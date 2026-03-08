@@ -2,10 +2,10 @@ export const WORLD_CONFIG = {
   cols: 80,
   rows: 80,
   tileSize: 32,
-  isoTileWidth: 128,
-  isoTileHeight: 64,
-  spriteDrawWidth: 128,
-  spriteDrawHeight: 110,
+  isoTileWidth: 160,
+  isoTileHeight: 80,
+  spriteDrawWidth: 160,
+  spriteDrawHeight: 140,
 };
 
 export const PLAYER_CONFIG = {

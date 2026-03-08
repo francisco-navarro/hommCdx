@@ -19,16 +19,11 @@ if (!gameCtx || !miniCtx || !stepCountEl) {
 const view = { width: 1, height: 1 };
 let world = WORLD_CONFIG;
 let state = null;
-let renderState = null;
 let ws = null;
 let backendReady = false;
 let sessionId = null;
 let playerName = null;
 let pendingTargetKey = null;
-let lastFrameTs = performance.now();
-
-const SMOOTHING_RATE = 14;
-const SNAP_DISTANCE = 180;
 
 function ensureSession() {
   let id = localStorage.getItem(SESSION_KEY);
@@ -88,74 +83,6 @@ function renderBackendError(message) {
   gameCtx.fillText(message, 40, 120);
 }
 
-function cloneStateForRender(source) {
-  if (!source) return null;
-  return {
-    ...source,
-    player: source.player ? { ...source.player } : null,
-    camera: source.camera ? { ...source.camera } : null,
-    moveTarget: source.moveTarget ? { ...source.moveTarget } : null,
-    plannedPath: Array.isArray(source.plannedPath) ? source.plannedPath.map((step) => ({ ...step })) : [],
-    players: Array.isArray(source.players) ? source.players.map((p) => ({ ...p })) : [],
-  };
-}
-
-function smoothPoint(from, to, factor, snapDistance = SNAP_DISTANCE) {
-  if (!from) return { x: to.x, y: to.y };
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  if (Math.hypot(dx, dy) >= snapDistance) {
-    return { x: to.x, y: to.y };
-  }
-  return {
-    x: from.x + dx * factor,
-    y: from.y + dy * factor,
-  };
-}
-
-function updateRenderState(current, target, dt) {
-  if (!target) return current;
-  if (!current) return cloneStateForRender(target);
-
-  const factor = 1 - Math.exp(-SMOOTHING_RATE * dt);
-  current.selfSessionId = target.selfSessionId;
-  current.chunk = target.chunk;
-  current.moveTarget = target.moveTarget ? { ...target.moveTarget } : null;
-  current.plannedPath = target.plannedPath || [];
-
-  if (target.player) {
-    const smoothed = smoothPoint(current.player, target.player, factor);
-    current.player = { ...target.player, x: smoothed.x, y: smoothed.y };
-  }
-
-  if (target.camera) {
-    const smoothed = smoothPoint(current.camera, target.camera, factor, SNAP_DISTANCE * 1.4);
-    current.camera = { ...target.camera, x: smoothed.x, y: smoothed.y };
-  }
-
-  const byId = new Map((current.players || []).map((p) => [p.id, p]));
-  const nextPlayers = [];
-  const targetPlayers = target.players || [];
-
-  for (let i = 0; i < targetPlayers.length; i += 1) {
-    const next = targetPlayers[i];
-    const prev = byId.get(next.id);
-    if (!prev) {
-      nextPlayers.push({ ...next });
-      continue;
-    }
-    const smoothed = smoothPoint(prev, next, factor);
-    nextPlayers.push({
-      ...next,
-      x: smoothed.x,
-      y: smoothed.y,
-    });
-  }
-
-  current.players = nextPlayers;
-  return current;
-}
-
 function connectWs() {
   return new Promise((resolve, reject) => {
     const protocol = location.protocol === "https:" ? "wss" : "ws";
@@ -187,8 +114,6 @@ function connectWs() {
           selfSessionId: data.selfSessionId,
           chunk: data.chunk,
         };
-        renderState = cloneStateForRender(state);
-        lastFrameTs = performance.now();
         stepCountEl.textContent = String(data.steps);
         backendReady = true;
         resolve();
@@ -320,23 +245,17 @@ async function initGame() {
   const renderWorld = createTileMapRenderer(gameCtx, world, view, sprites);
 
   function frame() {
-    const now = performance.now();
-    const dt = Math.min((now - lastFrameTs) / 1000, 0.05);
-    lastFrameTs = now;
-
     if (state) {
-      renderState = updateRenderState(renderState, state, dt);
-      renderWorld(renderState.camera, renderState.chunk);
-      renderPlannedPathOverlay(renderState);
-      renderPlayersOverlay(renderState);
-      renderMinimap(miniCtx, minimapCanvas, renderState, world, view);
+      renderWorld(state.camera, state.chunk);
+      renderPlannedPathOverlay(state);
+      renderPlayersOverlay(state);
+      renderMinimap(miniCtx, minimapCanvas, state, world, view);
     }
     requestAnimationFrame(frame);
   }
 
   gameCanvas.addEventListener("click", (event) => {
     if (!backendReady || !state) return;
-    const currentState = renderState || state;
     const rect = gameCanvas.getBoundingClientRect();
     const scaleX = gameCanvas.width / rect.width;
     const scaleY = gameCanvas.height / rect.height;
@@ -346,13 +265,13 @@ async function initGame() {
       event,
       rect,
       view,
-      currentState.camera,
+      state.camera,
       world,
       world.cols * world.tileSize,
       world.rows * world.tileSize
     );
     const clickedKey = worldToTileKey(worldPos);
-    const plannedTargetKey = getPlannedTargetKey(currentState);
+    const plannedTargetKey = getPlannedTargetKey(state);
 
     if (plannedTargetKey && pendingTargetKey === plannedTargetKey && clickedKey === plannedTargetKey) {
       sendWs({
