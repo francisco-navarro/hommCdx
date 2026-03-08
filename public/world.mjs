@@ -332,8 +332,6 @@ function paintStructures(tiles, world) {
     Math.floor((world.cols + world.rows) / structureRules.castleYellowDivisor)
   );
 
-  placeStructureType(tiles, world, TILE_TYPES.SAWMILL, sawmillCount, 12001, structureRules.maxPlaceAttempts);
-  placeStructureType(tiles, world, TILE_TYPES.GOLD_MINE, goldMineCount, 13001, structureRules.maxPlaceAttempts);
   placeStructureType(tiles, world, TILE_TYPES.CASTLE_RED, castleRedCount, 14001, structureRules.maxPlaceAttempts);
   placeStructureType(
     tiles,
@@ -343,6 +341,8 @@ function paintStructures(tiles, world) {
     15001,
     structureRules.maxPlaceAttempts
   );
+  placeStructureType(tiles, world, TILE_TYPES.SAWMILL, sawmillCount, 12001, structureRules.maxPlaceAttempts);
+  placeStructureType(tiles, world, TILE_TYPES.GOLD_MINE, goldMineCount, 13001, structureRules.maxPlaceAttempts);
 }
 
 function placeStructureType(tiles, world, tileType, targetCount, seedBase, maxAttempts) {

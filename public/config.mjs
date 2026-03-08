@@ -1,11 +1,17 @@
+const RENDER_SCALE = 2;
+const ISO_BASE_WIDTH = 128;
+const ISO_BASE_HEIGHT = 64;
+const SPRITE_BASE_WIDTH = 128;
+const SPRITE_BASE_HEIGHT = 110;
+
 export const WORLD_CONFIG = {
   cols: 80,
   rows: 80,
   tileSize: 32,
-  isoTileWidth: 160,
-  isoTileHeight: 80,
-  spriteDrawWidth: 160,
-  spriteDrawHeight: 140,
+  isoTileWidth: ISO_BASE_WIDTH * RENDER_SCALE,
+  isoTileHeight: ISO_BASE_HEIGHT * RENDER_SCALE,
+  spriteDrawWidth: SPRITE_BASE_WIDTH * RENDER_SCALE,
+  spriteDrawHeight: SPRITE_BASE_HEIGHT * RENDER_SCALE,
 };
 
 export const PLAYER_CONFIG = {

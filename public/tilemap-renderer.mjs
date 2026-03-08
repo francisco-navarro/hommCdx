@@ -1,12 +1,18 @@
 import { TILE_CATALOG, TILE_TYPES } from "./map-config.mjs";
 import { worldToIsometric } from "./game-logic.mjs";
 
-const DEBUG_TILES = true;
+const DEBUG_TILES = false;
 const NORMALIZED_SOURCE_WIDTH = 1024;
 const NORMALIZED_SOURCE_HEIGHT = 885;
 const TILE_DEBUG_NAMES = Object.fromEntries(
   Object.entries(TILE_CATALOG).map(([id, tile]) => [Number(id), tile.image.split("/").pop() || ""])
 );
+const STRUCTURE_TILES = new Set([
+  TILE_TYPES.SAWMILL,
+  TILE_TYPES.GOLD_MINE,
+  TILE_TYPES.CASTLE_RED,
+  TILE_TYPES.CASTLE_YELLOW,
+]);
 
 export async function loadTileSprites() {
   const entries = Object.values(TILE_CATALOG).map((tile) => [tile.id, tile.image]);
@@ -56,6 +62,8 @@ export function createTileMapRenderer(ctx, world, view, sprites) {
     ctx.clearRect(0, 0, view.width, view.height);
     if (!chunk || !chunk.tiles || chunk.cols <= 0 || chunk.rows <= 0) return;
 
+    const deferredStructures = [];
+    const debugLabels = [];
     const maxDiag = chunk.cols + chunk.rows - 2;
     for (let diag = 0; diag <= maxDiag; diag += 1) {
       const minCol = Math.max(0, diag - (chunk.rows - 1));
@@ -65,6 +73,7 @@ export function createTileMapRenderer(ctx, world, view, sprites) {
         const idx = row * chunk.cols + col;
         const tileType = chunk.tiles[idx];
         const sprite = sprites[tileType] || sprites[TILE_TYPES.GRASS];
+        const isStructureTile = STRUCTURE_TILES.has(tileType);
         const worldCol = chunk.startCol + col;
         const worldRow = chunk.startRow + row;
         const iso = worldToIsometric(
@@ -84,20 +93,41 @@ export function createTileMapRenderer(ctx, world, view, sprites) {
         ) {
           continue;
         }
-        ctx.drawImage(sprite, x, y, world.spriteDrawWidth, world.spriteDrawHeight);
-        if (DEBUG_TILES) {
-          ctx.save();
-          ctx.fillStyle = "#f8d1d1";
-          ctx.font = "8px monospace";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.shadowColor = "#000000";
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetX = 1;
-          ctx.shadowOffsetY = 1;
-          ctx.fillText(TILE_DEBUG_NAMES[tileType] || String(tileType), iso.x, iso.y);
-          ctx.restore();
+
+        if (isStructureTile) {
+          const baseSprite = sprites[TILE_TYPES.GRASS] || sprite;
+          ctx.drawImage(baseSprite, x, y, world.spriteDrawWidth, world.spriteDrawHeight);
+          deferredStructures.push({ sprite, x, y });
+        } else {
+          ctx.drawImage(sprite, x, y, world.spriteDrawWidth, world.spriteDrawHeight);
         }
+
+        if (DEBUG_TILES) {
+          debugLabels.push({ iso, tileType });
+        }
+      }
+    }
+
+    // Draw structures in a second pass so they stay above adjacent terrain tiles.
+    for (let i = 0; i < deferredStructures.length; i += 1) {
+      const s = deferredStructures[i];
+      ctx.drawImage(s.sprite, s.x, s.y, world.spriteDrawWidth, world.spriteDrawHeight);
+    }
+
+    if (DEBUG_TILES) {
+      for (let i = 0; i < debugLabels.length; i += 1) {
+        const label = debugLabels[i];
+        ctx.save();
+        ctx.fillStyle = "#f8d1d1";
+        ctx.font = "8px monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.shadowColor = "#000000";
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
+        ctx.fillText(TILE_DEBUG_NAMES[label.tileType] || String(label.tileType), label.iso.x, label.iso.y);
+        ctx.restore();
       }
     }
   };

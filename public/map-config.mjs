@@ -272,11 +272,11 @@ export const GENERATION_RULES = {
     sawmillDivisor: 55,
     goldMineMin: 1,
     goldMineDivisor: 65,
-    castleRedMin: 1,
-    castleRedDivisor: 110,
-    castleYellowMin: 1,
-    castleYellowDivisor: 110,
-    maxPlaceAttempts: 350,
+    castleRedMin: 4,
+    castleRedDivisor: 35,
+    castleYellowMin: 4,
+    castleYellowDivisor: 35,
+    maxPlaceAttempts: 600,
   },
 };
 
