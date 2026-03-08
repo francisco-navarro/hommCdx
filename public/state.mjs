@@ -48,6 +48,7 @@ export function setMoveTargetFromClick(state, click, rect, world, view) {
     rect,
     view,
     state.camera,
+    world,
     width,
     height
   );

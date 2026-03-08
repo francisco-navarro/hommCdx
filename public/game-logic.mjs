@@ -42,19 +42,43 @@ export function clampPlayerToWorld(player, worldW, worldH) {
 
 export function computeCamera(player, view, worldW, worldH) {
   return {
-    x: clamp(player.x - view.width / 2, 0, Math.max(0, worldW - view.width)),
-    y: clamp(player.y - view.height / 2, 0, Math.max(0, worldH - view.height)),
+    x: clamp(player.x, 0, worldW),
+    y: clamp(player.y, 0, worldH),
   };
 }
 
-export function screenClickToWorld(click, rect, view, camera, worldW, worldH) {
-  const scaleX = view.width / rect.width;
-  const scaleY = view.height / rect.height;
-  const canvasX = (click.clientX - rect.left) * scaleX;
-  const canvasY = (click.clientY - rect.top) * scaleY;
+export function worldToIsometric(worldX, worldY, world, camera, view) {
+  const halfW = world.isoTileWidth / 2;
+  const halfH = world.isoTileHeight / 2;
+  const gridX = worldX / world.tileSize;
+  const gridY = worldY / world.tileSize;
+  const camGridX = camera.x / world.tileSize;
+  const camGridY = camera.y / world.tileSize;
 
   return {
-    x: clamp(camera.x + canvasX, 0, worldW),
-    y: clamp(camera.y + canvasY, 0, worldH),
+    x: (gridX - gridY) * halfW - (camGridX - camGridY) * halfW + view.width / 2,
+    y: (gridX + gridY) * halfH - (camGridX + camGridY) * halfH + view.height / 2,
+  };
+}
+
+export function screenClickToWorld(click, rect, view, camera, world, worldW, worldH) {
+  const scaleX = view.width / rect.width;
+  const scaleY = view.height / rect.height;
+  const canvasX = (click.clientX - rect.left) * scaleX - view.width / 2;
+  const canvasY = (click.clientY - rect.top) * scaleY - view.height / 2;
+  const halfW = world.isoTileWidth / 2;
+  const halfH = world.isoTileHeight / 2;
+  const camGridX = camera.x / world.tileSize;
+  const camGridY = camera.y / world.tileSize;
+  const isoX = canvasX + (camGridX - camGridY) * halfW;
+  const isoY = canvasY + (camGridX + camGridY) * halfH;
+  const a = isoX / halfW;
+  const b = isoY / halfH;
+  const gridX = (a + b) / 2;
+  const gridY = (b - a) / 2;
+
+  return {
+    x: clamp(gridX * world.tileSize, 0, worldW),
+    y: clamp(gridY * world.tileSize, 0, worldH),
   };
 }

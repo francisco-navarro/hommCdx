@@ -26,8 +26,10 @@ export function renderMinimap(ctx, canvas, state, world, view, tiles) {
   ctx.arc(px, py, 4, 0, Math.PI * 2);
   ctx.fill();
 
-  const vx = (state.camera.x / worldSize.width) * mmW;
-  const vy = (state.camera.y / worldSize.height) * mmH;
+  const topLeftX = Math.max(0, Math.min(worldSize.width - view.width, state.camera.x - view.width / 2));
+  const topLeftY = Math.max(0, Math.min(worldSize.height - view.height, state.camera.y - view.height / 2));
+  const vx = (topLeftX / worldSize.width) * mmW;
+  const vy = (topLeftY / worldSize.height) * mmH;
   const vw = (view.width / worldSize.width) * mmW;
   const vh = (view.height / worldSize.height) * mmH;
 

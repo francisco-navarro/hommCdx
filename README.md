@@ -2,7 +2,7 @@
 
 Simple Node + browser project for a web-based game prototype with:
 
-- Procedural tile map rendered with PNG sprites
+- Procedural isometric tile map rendered with overlapping PNG sprites
 - Camera following a player
 - Minimap with viewport rectangle
 

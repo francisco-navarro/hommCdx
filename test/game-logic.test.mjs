@@ -43,7 +43,7 @@ test("clampPlayerToWorld keeps player in map bounds", () => {
 
 test("computeCamera clamps viewport in world", () => {
   const camera = computeCamera({ x: 50, y: 50 }, { width: 200, height: 100 }, 500, 400);
-  assert.deepEqual(camera, { x: 0, y: 0 });
+  assert.deepEqual(camera, { x: 50, y: 50 });
 
   const camera2 = computeCamera(
     { x: 490, y: 390 },
@@ -51,18 +51,20 @@ test("computeCamera clamps viewport in world", () => {
     500,
     400
   );
-  assert.deepEqual(camera2, { x: 300, y: 300 });
+  assert.deepEqual(camera2, { x: 490, y: 390 });
 });
 
 test("screenClickToWorld converts screen click to clamped world coordinates", () => {
-  const click = { clientX: 350, clientY: 250 };
+  const click = { clientX: 350, clientY: 225 };
   const rect = { left: 100, top: 100, width: 500, height: 250 };
   const view = { width: 1000, height: 500 };
-  const camera = { x: 200, y: 300 };
+  const camera = { x: 320, y: 160 };
+  const world = { tileSize: 32, isoTileWidth: 128, isoTileHeight: 64 };
 
-  const worldPos = screenClickToWorld(click, rect, view, camera, 1200, 900);
-  assert.deepEqual(worldPos, { x: 700, y: 600 });
+  const worldPos = screenClickToWorld(click, rect, view, camera, world, 1200, 900);
+  assert.deepEqual(worldPos, { x: 320, y: 160 });
 
-  const clamped = screenClickToWorld(click, rect, view, { x: 1000, y: 850 }, 1200, 900);
-  assert.deepEqual(clamped, { x: 1200, y: 900 });
+  const outside = { clientX: -500, clientY: -500 };
+  const clamped = screenClickToWorld(outside, rect, view, camera, world, 1200, 900);
+  assert.deepEqual(clamped, { x: 0, y: 0 });
 });

@@ -1,4 +1,5 @@
 import { TILE_TYPES } from "./config.mjs";
+import { worldToIsometric } from "./game-logic.mjs";
 
 export async function loadTileSprites() {
   const entries = [
@@ -29,30 +30,46 @@ function loadImage(src) {
 export function createTileMapRenderer(ctx, world, view, sprites) {
   return function render(state, tiles) {
     ctx.clearRect(0, 0, view.width, view.height);
-
-    const tileSize = world.tileSize;
-    const startCol = Math.max(0, Math.floor(state.camera.x / tileSize));
-    const endCol = Math.min(world.cols, Math.ceil((state.camera.x + view.width) / tileSize));
-    const startRow = Math.max(0, Math.floor(state.camera.y / tileSize));
-    const endRow = Math.min(world.rows, Math.ceil((state.camera.y + view.height) / tileSize));
-
-    for (let row = startRow; row < endRow; row += 1) {
-      for (let col = startCol; col < endCol; col += 1) {
+    const maxDiag = world.cols + world.rows - 2;
+    for (let diag = 0; diag <= maxDiag; diag += 1) {
+      const minCol = Math.max(0, diag - (world.rows - 1));
+      const maxCol = Math.min(world.cols - 1, diag);
+      for (let col = minCol; col <= maxCol; col += 1) {
+        const row = diag - col;
         const idx = row * world.cols + col;
         const tileType = tiles[idx];
         const sprite = sprites[tileType];
-        const x = col * tileSize - state.camera.x;
-        const y = row * tileSize - state.camera.y;
-        ctx.drawImage(sprite, x, y, tileSize, tileSize);
+        const iso = worldToIsometric(
+          col * world.tileSize,
+          row * world.tileSize,
+          world,
+          state.camera,
+          view
+        );
+        const x = iso.x - world.spriteDrawWidth / 2;
+        const y = iso.y - world.spriteDrawHeight / 2;
+        if (
+          x > view.width ||
+          y > view.height ||
+          x + world.spriteDrawWidth < 0 ||
+          y + world.spriteDrawHeight < 0
+        ) {
+          continue;
+        }
+        ctx.drawImage(sprite, x, y, world.spriteDrawWidth, world.spriteDrawHeight);
       }
     }
 
-    ctx.fillStyle = "#ffe743";
-    ctx.fillRect(
-      state.player.x - state.camera.x - state.player.size / 2,
-      state.player.y - state.camera.y - state.player.size / 2,
-      state.player.size,
-      state.player.size
+    const playerIso = worldToIsometric(
+      state.player.x,
+      state.player.y,
+      world,
+      state.camera,
+      view
     );
+    ctx.fillStyle = "#ffe743";
+    ctx.beginPath();
+    ctx.arc(playerIso.x, playerIso.y, state.player.size / 2, 0, Math.PI * 2);
+    ctx.fill();
   };
 }

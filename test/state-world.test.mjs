@@ -43,11 +43,17 @@ test("createInitialState starts player centered in world", () => {
   assert.equal(state.player.x, 160);
   assert.equal(state.player.y, 192);
   assert.equal(state.moveTarget.active, false);
-  assert.deepEqual(state.camera, { x: 0, y: 72 });
+  assert.deepEqual(state.camera, { x: 160, y: 192 });
 });
 
 test("setMoveTargetFromClick maps click to world and activates target", () => {
-  const world = { cols: 10, rows: 10, tileSize: 32 };
+  const world = {
+    cols: 10,
+    rows: 10,
+    tileSize: 32,
+    isoTileWidth: 128,
+    isoTileHeight: 64,
+  };
   const view = { width: 320, height: 160 };
   const state = {
     player: { x: 100, y: 100, speed: 300, size: 18 },
@@ -59,7 +65,7 @@ test("setMoveTargetFromClick maps click to world and activates target", () => {
   const rect = { left: 50, top: 50, width: 200, height: 100 };
   const next = setMoveTargetFromClick(state, click, rect, world, view);
 
-  assert.deepEqual(next.moveTarget, { x: 200, y: 140, active: true });
+  assert.deepEqual(next.moveTarget, { x: 40, y: 60, active: true });
 });
 
 test("updateGameState advances player toward click target", () => {
