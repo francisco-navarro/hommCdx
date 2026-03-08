@@ -184,9 +184,10 @@ function drawArrow(fromIso, toIso) {
 
   const ux = dx / len;
   const uy = dy / len;
-  const headSize = 7;
-  const baseX = toIso.x - ux * (headSize * 1.5);
-  const baseY = toIso.y - uy * (headSize * 1.5);
+  const headLength = 12;
+  const headHalfWidth = 5;
+  const baseX = toIso.x - ux * headLength;
+  const baseY = toIso.y - uy * headLength;
   const nx = -uy;
   const ny = ux;
 
@@ -204,20 +205,16 @@ function drawArrow(fromIso, toIso) {
   gameCtx.lineTo(baseX, baseY);
   gameCtx.stroke();
 
-  gameCtx.fillStyle = "#ffffff";
-  gameCtx.beginPath();
-  gameCtx.moveTo(toIso.x, toIso.y);
-  gameCtx.lineTo(baseX + nx * headSize * 0.65, baseY + ny * headSize * 0.65);
-  gameCtx.lineTo(baseX - nx * headSize * 0.65, baseY - ny * headSize * 0.65);
-  gameCtx.closePath();
-  gameCtx.fill();
-
   gameCtx.fillStyle = "#22c55e";
+  gameCtx.strokeStyle = "#ffffff";
+  gameCtx.lineWidth = 3;
+  gameCtx.lineJoin = "round";
   gameCtx.beginPath();
   gameCtx.moveTo(toIso.x, toIso.y);
-  gameCtx.lineTo(baseX + nx * headSize * 0.5, baseY + ny * headSize * 0.5);
-  gameCtx.lineTo(baseX - nx * headSize * 0.5, baseY - ny * headSize * 0.5);
+  gameCtx.lineTo(baseX + nx * headHalfWidth, baseY + ny * headHalfWidth);
+  gameCtx.lineTo(baseX - nx * headHalfWidth, baseY - ny * headHalfWidth);
   gameCtx.closePath();
+  gameCtx.stroke();
   gameCtx.fill();
 }
 

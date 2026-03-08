@@ -59,7 +59,7 @@ export const TILE_CATALOG = {
     image: "/img/map/water-border.png",
     terrain: "shore",
     group: "water_edge",
-    walkable: true,
+    walkable: false,
     minimapColor: [0.53, 0.71, 0.86],
   },
   [TILE_TYPES.CORNER_1]: {
@@ -113,7 +113,7 @@ export const TILE_CATALOG = {
     image: "/img/map/water-corner1.png",
     terrain: "shore",
     group: "water_edge",
-    walkable: true,
+    walkable: false,
     minimapColor: [0.53, 0.71, 0.86],
   },
   [TILE_TYPES.WATER_CORNER_2]: {
@@ -122,7 +122,7 @@ export const TILE_CATALOG = {
     image: "/img/map/water-corner2.png",
     terrain: "shore",
     group: "water_edge",
-    walkable: true,
+    walkable: false,
     minimapColor: [0.53, 0.71, 0.86],
   },
   [TILE_TYPES.WATER_CORNER_3]: {
@@ -131,7 +131,7 @@ export const TILE_CATALOG = {
     image: "/img/map/water-corner3.png",
     terrain: "shore",
     group: "water_edge",
-    walkable: true,
+    walkable: false,
     minimapColor: [0.53, 0.71, 0.86],
   },
   [TILE_TYPES.WATER_CORNER_4]: {
@@ -140,7 +140,7 @@ export const TILE_CATALOG = {
     image: "/img/map/water-corner4.png",
     terrain: "shore",
     group: "water_edge",
-    walkable: true,
+    walkable: false,
     minimapColor: [0.53, 0.71, 0.86],
   },
   [TILE_TYPES.TREES_2]: {
