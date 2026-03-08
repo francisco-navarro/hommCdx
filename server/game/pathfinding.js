@@ -2,16 +2,51 @@ function key(col, row) {
   return `${col},${row}`;
 }
 
-function manhattan(a, b) {
-  return Math.abs(a.col - b.col) + Math.abs(a.row - b.row);
+function octile(a, b) {
+  const dx = Math.abs(a.col - b.col);
+  const dy = Math.abs(a.row - b.row);
+  const dMin = Math.min(dx, dy);
+  const dMax = Math.max(dx, dy);
+  return dMin * Math.SQRT2 + (dMax - dMin);
 }
 
-function neighbors(node, world) {
+function neighbors(node, world, isWalkableTile) {
   const out = [];
-  if (node.col > 0) out.push({ col: node.col - 1, row: node.row });
-  if (node.col < world.cols - 1) out.push({ col: node.col + 1, row: node.row });
-  if (node.row > 0) out.push({ col: node.col, row: node.row - 1 });
-  if (node.row < world.rows - 1) out.push({ col: node.col, row: node.row + 1 });
+
+  const orthogonal = [
+    { dc: -1, dr: 0, cost: 1 },
+    { dc: 1, dr: 0, cost: 1 },
+    { dc: 0, dr: -1, cost: 1 },
+    { dc: 0, dr: 1, cost: 1 },
+  ];
+  for (const step of orthogonal) {
+    const col = node.col + step.dc;
+    const row = node.row + step.dr;
+    if (col < 0 || row < 0 || col >= world.cols || row >= world.rows) continue;
+    out.push({ col, row, cost: step.cost });
+  }
+
+  // Diagonals are allowed, but avoid corner cutting through blocked orthogonal tiles.
+  const diagonals = [
+    { dc: -1, dr: -1 },
+    { dc: 1, dr: -1 },
+    { dc: 1, dr: 1 },
+    { dc: -1, dr: 1 },
+  ];
+  for (const step of diagonals) {
+    const col = node.col + step.dc;
+    const row = node.row + step.dr;
+    if (col < 0 || row < 0 || col >= world.cols || row >= world.rows) continue;
+
+    const adjACol = node.col + step.dc;
+    const adjARow = node.row;
+    const adjBCol = node.col;
+    const adjBRow = node.row + step.dr;
+    if (!isWalkableTile(adjACol, adjARow) || !isWalkableTile(adjBCol, adjBRow)) continue;
+
+    out.push({ col, row, cost: Math.SQRT2 });
+  }
+
   return out;
 }
 
@@ -23,7 +58,7 @@ function reconstructPath(cameFrom, end) {
     path.push(current);
   }
   path.reverse();
-  return path;
+  return path.map((node) => ({ col: node.col, row: node.row }));
 }
 
 function findNearestWalkableTile(target, isWalkableTile, world) {
@@ -57,7 +92,7 @@ function findPathAStar(start, goal, world, isWalkableTile) {
   const openSet = new Set([key(start.col, start.row)]);
   const cameFrom = new Map();
   const gScore = new Map([[key(start.col, start.row), 0]]);
-  const fScore = new Map([[key(start.col, start.row), manhattan(start, safeGoal)]]);
+  const fScore = new Map([[key(start.col, start.row), octile(start, safeGoal)]]);
 
   while (open.length > 0) {
     let bestIdx = 0;
@@ -81,16 +116,16 @@ function findPathAStar(start, goal, world, isWalkableTile) {
       return reconstructPath(cameFrom, current);
     }
 
-    for (const nb of neighbors(current, world)) {
+    for (const nb of neighbors(current, world, isWalkableTile)) {
       if (!isWalkableTile(nb.col, nb.row)) continue;
       const currentKey = key(current.col, current.row);
       const nbKey = key(nb.col, nb.row);
-      const tentativeG = (gScore.get(currentKey) ?? Number.POSITIVE_INFINITY) + 1;
+      const tentativeG = (gScore.get(currentKey) ?? Number.POSITIVE_INFINITY) + nb.cost;
       if (tentativeG >= (gScore.get(nbKey) ?? Number.POSITIVE_INFINITY)) continue;
 
       cameFrom.set(nbKey, current);
       gScore.set(nbKey, tentativeG);
-      fScore.set(nbKey, tentativeG + manhattan(nb, safeGoal));
+      fScore.set(nbKey, tentativeG + octile(nb, safeGoal));
       if (!openSet.has(nbKey)) {
         open.push(nb);
         openSet.add(nbKey);
