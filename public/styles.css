@@ -1,0 +1,74 @@
+:root {
+  --bg: #111822;
+  --panel: rgba(0, 0, 0, 0.55);
+  --text: #e8eef4;
+  --border: rgba(255, 255, 255, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: radial-gradient(circle at 20% 20%, #1c2838, var(--bg));
+  color: var(--text);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.game-shell {
+  position: relative;
+  width: min(96vw, 960px);
+  margin: 20px auto;
+}
+
+#gameCanvas {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: block;
+  background: #000;
+}
+
+#minimapCanvas {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  width: 220px;
+  height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.hud {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  background: var(--panel);
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+kbd {
+  margin-left: 4px;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+@media (max-width: 700px) {
+  #minimapCanvas {
+    width: 150px;
+    height: 150px;
+  }
+
+  .hud {
+    font-size: 12px;
+  }
+}
