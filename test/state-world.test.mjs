@@ -22,17 +22,23 @@ test("createWorldTiles is deterministic and within expected tile ids", () => {
   assert.deepEqual([...first], [...second]);
   assert.equal(first.length, 432);
 
-  let hasHorizontal = false;
-  let hasVertical = false;
+  const seen = new Set();
+  let hasRoad = false;
+  let hasWater = false;
+  let hasWaterBorder = false;
 
   for (const tile of first) {
-    assert.ok(tile >= 0 && tile <= 2);
-    if (tile === 1) hasHorizontal = true;
-    if (tile === 2) hasVertical = true;
+    assert.ok(tile >= 0 && tile <= 6);
+    seen.add(tile);
+    if (tile === 1 || tile === 2 || tile === 5 || tile === 6) hasRoad = true;
+    if (tile === 3) hasWater = true;
+    if (tile === 4) hasWaterBorder = true;
   }
 
-  assert.equal(hasHorizontal, true);
-  assert.equal(hasVertical, true);
+  assert.equal(hasRoad, true);
+  assert.equal(hasWater, true);
+  assert.equal(hasWaterBorder, true);
+  assert.ok(seen.size >= 5);
 });
 
 test("createInitialState starts player centered in world", () => {

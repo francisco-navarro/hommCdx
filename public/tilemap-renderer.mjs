@@ -6,6 +6,10 @@ export async function loadTileSprites() {
     [TILE_TYPES.GRASS, "/img/map/grass.png"],
     [TILE_TYPES.PATH_H, "/img/map/path-h.png"],
     [TILE_TYPES.PATH_V, "/img/map/path-v.png"],
+    [TILE_TYPES.WATER, "/img/map/water.png"],
+    [TILE_TYPES.WATER_BORDER, "/img/map/water-border.png"],
+    [TILE_TYPES.CORNER_1, "/img/map/corner1.png"],
+    [TILE_TYPES.CORNER_2, "/img/map/corner2.png"],
   ];
 
   const sprites = {};
@@ -38,7 +42,7 @@ export function createTileMapRenderer(ctx, world, view, sprites) {
         const row = diag - col;
         const idx = row * world.cols + col;
         const tileType = tiles[idx];
-        const sprite = sprites[tileType];
+        const sprite = sprites[tileType] || sprites[TILE_TYPES.GRASS];
         const iso = worldToIsometric(
           col * world.tileSize,
           row * world.tileSize,
