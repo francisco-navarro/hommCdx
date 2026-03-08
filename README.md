@@ -14,9 +14,15 @@ npm start
 
 Open `http://127.0.0.1:3000`.
 
+## Test
+
+```bash
+npm test
+```
+
 ## Controls
 
-- `W/A/S/D` or arrow keys to move
+- Click on the map to move
 
 ## Project Layout
 

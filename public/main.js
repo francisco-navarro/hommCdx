@@ -1,3 +1,11 @@
+import {
+  clamp,
+  updatePlayerTowardsTarget,
+  clampPlayerToWorld,
+  computeCamera,
+  screenClickToWorld,
+} from "./game-logic.mjs";
+
 const gameCanvas = document.getElementById("gameCanvas");
 const minimapCanvas = document.getElementById("minimapCanvas");
 const gl = gameCanvas.getContext("webgl");
@@ -30,7 +38,12 @@ const camera = {
   y: 0,
 };
 
-const keys = new Set();
+const moveTarget = {
+  active: false,
+  x: player.x,
+  y: player.y,
+};
+
 const tiles = new Uint8Array(WORLD.cols * WORLD.rows);
 
 function seededValue(x, y) {
@@ -111,10 +124,6 @@ const aPosition = gl.getAttribLocation(program, "aPosition");
 const aColor = gl.getAttribLocation(program, "aColor");
 const positionBuffer = gl.createBuffer();
 const colorBuffer = gl.createBuffer();
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-}
 
 function worldToClipX(worldX) {
   return ((worldX - camera.x) / VIEW.width) * 2 - 1;
@@ -228,28 +237,17 @@ function renderMinimap() {
 }
 
 function update(dt) {
-  let moveX = 0;
-  let moveY = 0;
-  if (keys.has("ArrowUp") || keys.has("w")) moveY -= 1;
-  if (keys.has("ArrowDown") || keys.has("s")) moveY += 1;
-  if (keys.has("ArrowLeft") || keys.has("a")) moveX -= 1;
-  if (keys.has("ArrowRight") || keys.has("d")) moveX += 1;
-
-  const length = Math.hypot(moveX, moveY) || 1;
-  moveX /= length;
-  moveY /= length;
-
-  player.x += moveX * player.speed * dt;
-  player.y += moveY * player.speed * dt;
+  const movement = updatePlayerTowardsTarget(player, moveTarget, dt);
+  Object.assign(player, movement.player);
+  Object.assign(moveTarget, movement.moveTarget);
 
   const worldW = WORLD.cols * WORLD.tileSize;
   const worldH = WORLD.rows * WORLD.tileSize;
+  const clampedPlayer = clampPlayerToWorld(player, worldW, worldH);
+  Object.assign(player, clampedPlayer);
 
-  player.x = clamp(player.x, 0, worldW);
-  player.y = clamp(player.y, 0, worldH);
-
-  camera.x = clamp(player.x - VIEW.width / 2, 0, Math.max(0, worldW - VIEW.width));
-  camera.y = clamp(player.y - VIEW.height / 2, 0, Math.max(0, worldH - VIEW.height));
+  const nextCamera = computeCamera(player, VIEW, worldW, worldH);
+  Object.assign(camera, nextCamera);
 }
 
 let lastTime = performance.now();
@@ -264,13 +262,22 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-window.addEventListener("keydown", (e) => {
-  keys.add(e.key.toLowerCase());
-  if (e.key.startsWith("Arrow")) e.preventDefault();
-});
+gameCanvas.addEventListener("click", (event) => {
+  const rect = gameCanvas.getBoundingClientRect();
+  const worldW = WORLD.cols * WORLD.tileSize;
+  const worldH = WORLD.rows * WORLD.tileSize;
+  const clickTarget = screenClickToWorld(
+    event,
+    rect,
+    VIEW,
+    camera,
+    worldW,
+    worldH
+  );
 
-window.addEventListener("keyup", (e) => {
-  keys.delete(e.key.toLowerCase());
+  moveTarget.x = clickTarget.x;
+  moveTarget.y = clickTarget.y;
+  moveTarget.active = true;
 });
 
 buildWorld();
