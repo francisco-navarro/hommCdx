@@ -156,10 +156,10 @@ function classifyPathTile(mask, world, x, y) {
   const s = isPath(mask, world, x, y + 1);
   const w = isPath(mask, world, x - 1, y);
 
-  if (n && e && !s && !w) return TILE_TYPES.CORNER_4;
-  if (e && s && !n && !w) return TILE_TYPES.CORNER_1;
-  if (s && w && !n && !e) return TILE_TYPES.CORNER_2;
-  if (w && n && !e && !s) return TILE_TYPES.CORNER_3;
+  if (n && e && !s && !w) return TILE_TYPES.PATH_CORNER_NE;
+  if (e && s && !n && !w) return TILE_TYPES.PATH_CORNER_SE;
+  if (s && w && !n && !e) return TILE_TYPES.PATH_CORNER_SW;
+  if (w && n && !e && !s) return TILE_TYPES.PATH_CORNER_NW;
 
   if ((n || s) && !(e || w)) return TILE_TYPES.PATH_V;
   if ((e || w) && !(n || s)) return TILE_TYPES.PATH_H;
@@ -233,10 +233,10 @@ function isPathTile(type) {
   return (
     type === TILE_TYPES.PATH_H ||
     type === TILE_TYPES.PATH_V ||
-    type === TILE_TYPES.CORNER_1 ||
-    type === TILE_TYPES.CORNER_2 ||
-    type === TILE_TYPES.CORNER_3 ||
-    type === TILE_TYPES.CORNER_4
+    type === TILE_TYPES.PATH_CORNER_SE ||
+    type === TILE_TYPES.PATH_CORNER_SW ||
+    type === TILE_TYPES.PATH_CORNER_NW ||
+    type === TILE_TYPES.PATH_CORNER_NE
   );
 }
 

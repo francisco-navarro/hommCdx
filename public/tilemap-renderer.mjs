@@ -1,8 +1,12 @@
 import { TILE_CATALOG, TILE_TYPES } from "./map-config.mjs";
 import { worldToIsometric } from "./game-logic.mjs";
 
+const DEBUG_TILES = true;
 const NORMALIZED_SOURCE_WIDTH = 1024;
 const NORMALIZED_SOURCE_HEIGHT = 885;
+const TILE_DEBUG_NAMES = Object.fromEntries(
+  Object.entries(TILE_CATALOG).map(([id, tile]) => [Number(id), tile.image.split("/").pop() || ""])
+);
 
 export async function loadTileSprites() {
   const entries = Object.values(TILE_CATALOG).map((tile) => [tile.id, tile.image]);
@@ -81,6 +85,19 @@ export function createTileMapRenderer(ctx, world, view, sprites) {
           continue;
         }
         ctx.drawImage(sprite, x, y, world.spriteDrawWidth, world.spriteDrawHeight);
+        if (DEBUG_TILES) {
+          ctx.save();
+          ctx.fillStyle = "#f8d1d1";
+          ctx.font = "8px monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.shadowColor = "#000000";
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 1;
+          ctx.fillText(TILE_DEBUG_NAMES[tileType] || String(tileType), iso.x, iso.y);
+          ctx.restore();
+        }
       }
     }
   };
