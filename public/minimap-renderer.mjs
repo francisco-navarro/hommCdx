@@ -1,6 +1,31 @@
 import { TILE_CATALOG, TILE_COLORS } from "./map-config.mjs";
 import { getWorldSize } from "./world.mjs";
 
+function drawCompass(ctx, mmW, mmH) {
+  ctx.save();
+  ctx.font = "bold 11px monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#000000";
+  ctx.fillStyle = "#ffffff";
+
+  const margin = 10;
+  const markers = [
+    { label: "N", x: mmW / 2, y: margin },
+    { label: "S", x: mmW / 2, y: mmH - margin },
+    { label: "W", x: margin, y: mmH / 2 },
+    { label: "E", x: mmW - margin, y: mmH / 2 },
+  ];
+
+  for (let i = 0; i < markers.length; i += 1) {
+    const m = markers[i];
+    ctx.strokeText(m.label, m.x, m.y);
+    ctx.fillText(m.label, m.x, m.y);
+  }
+  ctx.restore();
+}
+
 export function renderMinimap(ctx, canvas, state, world, view) {
   const mmW = canvas.width;
   const mmH = canvas.height;
@@ -47,4 +72,6 @@ export function renderMinimap(ctx, canvas, state, world, view) {
   ctx.strokeStyle = "#ffffff";
   ctx.lineWidth = 1.5;
   ctx.strokeRect(vx, vy, vw, vh);
+
+  drawCompass(ctx, mmW, mmH);
 }

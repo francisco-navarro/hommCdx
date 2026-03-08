@@ -11,14 +11,34 @@ async function startServer() {
   });
 
   const stopTicker = attachWebSocketServer(server, game, HOST, PORT);
+  let shuttingDown = false;
 
   server.listen(PORT, HOST, () => {
     console.log(`Game server running at http://${HOST}:${PORT}`);
   });
 
-  process.on("SIGINT", () => {
+  function shutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[shutdown] Signal received: ${signal}`);
+    console.log("[shutdown] Stopping game ticker...");
     stopTicker();
-    server.close();
+    console.log("[shutdown] Closing HTTP/WebSocket server...");
+    server.close((error) => {
+      if (error) {
+        console.error("[shutdown] Error while closing server:", error);
+        process.exitCode = 1;
+      } else {
+        console.log("[shutdown] Server closed cleanly.");
+      }
+    });
+  }
+
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+
+  process.on("exit", (code) => {
+    console.log(`[shutdown] Process exiting with code ${code}.`);
   });
 }
 
