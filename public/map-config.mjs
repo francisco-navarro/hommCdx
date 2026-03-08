@@ -20,7 +20,6 @@ export const TILE_TYPES = {
   WATER_BORDER_S: 18,
   WATER_BORDER_W: 19,
   // Legacy aliases (kept for compatibility)
-  WATER_BORDER: 4,
   CORNER_1: 5,
   CORNER_2: 6,
   CORNER_3: 7,

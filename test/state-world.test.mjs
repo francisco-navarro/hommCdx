@@ -49,7 +49,7 @@ test("createWorldTiles is deterministic and within expected tile ids", () => {
   assert.equal(hasCorner, true);
   assert.equal(hasWater, true);
   assert.equal(hasWaterBorder, true);
-  assert.equal(hasWaterCorner, true);
+  assert.equal(hasWaterCorner, false);
   assert.equal(hasTrees, true);
   assert.equal(hasGrass2, true);
   assert.ok(seen.size >= 5);

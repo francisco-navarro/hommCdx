@@ -351,16 +351,12 @@ function classifyWaterShoreTile(tiles, world, x, y) {
   const s = isWaterTile(tiles, world, x, y + 1);
   const w = isWaterTile(tiles, world, x - 1, y);
 
-  if (n && e && !s && !w) return TILE_TYPES.WATER_CORNER_1;
-  if (e && s && !n && !w) return TILE_TYPES.WATER_CORNER_2;
-  if (s && w && !n && !e) return TILE_TYPES.WATER_CORNER_3;
-  if (w && n && !e && !s) return TILE_TYPES.WATER_CORNER_4;
   if (n && !e && !s && !w) return TILE_TYPES.WATER_BORDER_N;
   if (e && !n && !s && !w) return TILE_TYPES.WATER_BORDER_E;
   if (s && !n && !e && !w) return TILE_TYPES.WATER_BORDER_S;
   if (w && !n && !e && !s) return TILE_TYPES.WATER_BORDER_W;
 
-  // For complex shoreline patterns fallback to a deterministic border orientation.
+  // For corners/complex shorelines, force one of the directional borders only.
   if (n) return TILE_TYPES.WATER_BORDER_N;
   if (e) return TILE_TYPES.WATER_BORDER_E;
   if (s) return TILE_TYPES.WATER_BORDER_S;
