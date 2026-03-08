@@ -1,4 +1,4 @@
-import { TILE_TYPES } from "./config.mjs";
+import { GENERATION_RULES, TILE_TYPES } from "./map-config.mjs";
 
 export function seededValue(x, y) {
   const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123;
@@ -10,8 +10,9 @@ export function createWorldTiles(world) {
   tiles.fill(TILE_TYPES.GRASS);
 
   paintWaterBodies(tiles, world);
-  paintRoads(tiles, world);
+  paintRoadNetwork(tiles, world);
   paintWaterBorders(tiles, world);
+  paintTreePatches(tiles, world);
 
   return tiles;
 }
@@ -25,11 +26,16 @@ function inBounds(world, x, y) {
 }
 
 function paintWaterBodies(tiles, world) {
-  const lakeCount = Math.max(3, Math.floor(Math.min(world.cols, world.rows) / 12));
+  const lakeCount = Math.max(
+    GENERATION_RULES.water.minLakes,
+    Math.floor(Math.min(world.cols, world.rows) / 12)
+  );
   for (let i = 0; i < lakeCount; i += 1) {
     const cx = Math.floor(seededValue(100 + i * 13, 201 + i * 17) * world.cols);
     const cy = Math.floor(seededValue(300 + i * 19, 401 + i * 23) * world.rows);
-    const baseRadius = 2 + Math.floor(seededValue(500 + i * 29, 601 + i * 31) * 5);
+    const baseRadius =
+      GENERATION_RULES.water.radiusMin +
+      Math.floor(seededValue(500 + i * 29, 601 + i * 31) * GENERATION_RULES.water.radiusVar);
 
     for (let y = Math.max(0, cy - baseRadius - 2); y <= Math.min(world.rows - 1, cy + baseRadius + 2); y += 1) {
       for (let x = Math.max(0, cx - baseRadius - 2); x <= Math.min(world.cols - 1, cx + baseRadius + 2); x += 1) {
@@ -45,62 +51,127 @@ function paintWaterBodies(tiles, world) {
   }
 }
 
-function paintRoads(tiles, world) {
-  const horizontalStartY = Math.floor(
-    seededValue(901, 1011) * (world.rows - 4)
-  ) + 2;
-  const verticalStartX = Math.floor(
-    seededValue(1111, 1211) * (world.cols - 4)
-  ) + 2;
+function paintRoadNetwork(tiles, world) {
+  const pathMask = buildPathMask(world);
 
-  carveRoad(tiles, world, 0, horizontalStartY, "horizontal");
-  carveRoad(tiles, world, verticalStartX, 0, "vertical");
+  for (let y = 0; y < world.rows; y += 1) {
+    for (let x = 0; x < world.cols; x += 1) {
+      const idx = indexOf(world, x, y);
+      if (!pathMask[idx]) continue;
+      tiles[idx] = classifyPathTile(pathMask, world, x, y);
+    }
+  }
 }
 
-function carveRoad(tiles, world, startX, startY, mode) {
-  let x = startX;
-  let y = startY;
-  let prevDx = 0;
-  let prevDy = 0;
-  let steps = 0;
+function buildPathMask(world) {
+  const mask = new Uint8Array(world.cols * world.rows);
+  const hub = {
+    x: Math.floor(world.cols / 2),
+    y: Math.floor(world.rows / 2),
+  };
+
+  const edgeTargets = [
+    { x: 0, y: Math.floor(seededValue(4001, 4003) * world.rows) },
+    { x: world.cols - 1, y: Math.floor(seededValue(4005, 4007) * world.rows) },
+    { x: Math.floor(seededValue(4009, 4011) * world.cols), y: 0 },
+    { x: Math.floor(seededValue(4013, 4015) * world.cols), y: world.rows - 1 },
+  ];
+
+  for (let i = 0; i < edgeTargets.length; i += 1) {
+    carvePath(mask, world, hub.x, hub.y, edgeTargets[i].x, edgeTargets[i].y, i);
+  }
+
+  // Add branches from existing roads to make the network less grid-like.
+  const branchCount = Math.max(
+    GENERATION_RULES.roads.branchMin,
+    Math.floor((world.cols + world.rows) / GENERATION_RULES.roads.branchDivisor)
+  );
+  for (let i = 0; i < branchCount; i += 1) {
+    const source = pickRoadCell(mask, world, i);
+    if (!source) break;
+    const tx = Math.floor(seededValue(5001 + i * 17, 5003 + i * 19) * world.cols);
+    const ty = Math.floor(seededValue(5005 + i * 23, 5007 + i * 29) * world.rows);
+    carvePath(mask, world, source.x, source.y, tx, ty, 100 + i);
+  }
+
+  return mask;
+}
+
+function pickRoadCell(mask, world, seed) {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const x = Math.floor(seededValue(6001 + seed * 13, 6003 + attempt * 17) * world.cols);
+    const y = Math.floor(seededValue(6005 + seed * 19, 6007 + attempt * 23) * world.rows);
+    if (mask[indexOf(world, x, y)]) return { x, y };
+  }
+  return null;
+}
+
+function carvePath(mask, world, sx, sy, tx, ty, seed) {
+  let x = sx;
+  let y = sy;
   const maxSteps = world.cols * world.rows;
 
-  while (inBounds(world, x, y) && steps < maxSteps) {
-    let dx = 0;
-    let dy = 0;
-    const turnBias = seededValue(1300 + x * 7 + steps, 1400 + y * 11 + steps);
+  for (let step = 0; step < maxSteps; step += 1) {
+    mask[indexOf(world, x, y)] = 1;
+    if (x === tx && y === ty) break;
 
-    if (mode === "horizontal") {
-      dx = 1;
-      if (turnBias > 0.82) dy = 1;
-      else if (turnBias < 0.18) dy = -1;
-    } else {
-      dy = 1;
-      if (turnBias > 0.82) dx = 1;
-      else if (turnBias < 0.18) dx = -1;
+    const dx = tx - x;
+    const dy = ty - y;
+    const sxDir = dx === 0 ? 0 : dx > 0 ? 1 : -1;
+    const syDir = dy === 0 ? 0 : dy > 0 ? 1 : -1;
+    const n = seededValue(7001 + seed * 31 + step * 7, 7003 + x * 11 + y * 13);
+
+    let nx = x;
+    let ny = y;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    if (sxDir !== 0 && syDir !== 0) {
+      if (n < 0.55) {
+        nx += sxDir;
+      } else {
+        ny += syDir;
+      }
+    } else if (sxDir !== 0) {
+      nx += sxDir;
+      if (n > 0.9 && syDir !== 0) ny += syDir;
+    } else if (syDir !== 0) {
+      ny += syDir;
+      if (n > 0.9 && sxDir !== 0) nx += sxDir;
     }
 
-    const idx = indexOf(world, x, y);
-    if (dy !== 0 && dx !== 0) {
-      const turnRight = dx * prevDy - dy * prevDx > 0;
-      tiles[idx] = turnRight ? TILE_TYPES.CORNER_1 : TILE_TYPES.CORNER_2;
-    } else if (dx !== 0) {
-      tiles[idx] = TILE_TYPES.PATH_H;
-    } else {
-      tiles[idx] = TILE_TYPES.PATH_V;
-    }
+    if (absDx > absDy + 4) ny = y;
+    if (absDy > absDx + 4) nx = x;
 
-    prevDx = dx;
-    prevDy = dy;
-    x += dx;
-    y += dy;
-    x = Math.max(0, Math.min(world.cols - 1, x));
-    y = Math.max(0, Math.min(world.rows - 1, y));
-
-    if (mode === "horizontal" && x >= world.cols - 1) break;
-    if (mode === "vertical" && y >= world.rows - 1) break;
-    steps += 1;
+    nx = Math.max(0, Math.min(world.cols - 1, nx));
+    ny = Math.max(0, Math.min(world.rows - 1, ny));
+    x = nx;
+    y = ny;
   }
+}
+
+function classifyPathTile(mask, world, x, y) {
+  const n = isPath(mask, world, x, y - 1);
+  const e = isPath(mask, world, x + 1, y);
+  const s = isPath(mask, world, x, y + 1);
+  const w = isPath(mask, world, x - 1, y);
+
+  if (n && e && !s && !w) return TILE_TYPES.CORNER_4;
+  if (e && s && !n && !w) return TILE_TYPES.CORNER_1;
+  if (s && w && !n && !e) return TILE_TYPES.CORNER_2;
+  if (w && n && !e && !s) return TILE_TYPES.CORNER_3;
+
+  if ((n || s) && !(e || w)) return TILE_TYPES.PATH_V;
+  if ((e || w) && !(n || s)) return TILE_TYPES.PATH_H;
+
+  // Intersections/T-junctions fallback.
+  if (n && s) return TILE_TYPES.PATH_V;
+  return TILE_TYPES.PATH_H;
+}
+
+function isPath(mask, world, x, y) {
+  if (!inBounds(world, x, y)) return false;
+  return mask[indexOf(world, x, y)] === 1;
 }
 
 function paintWaterBorders(tiles, world) {
@@ -109,21 +180,64 @@ function paintWaterBorders(tiles, world) {
     for (let x = 0; x < world.cols; x += 1) {
       const idx = indexOf(world, x, y);
       const current = clone[idx];
-      if (
-        current === TILE_TYPES.WATER ||
-        current === TILE_TYPES.PATH_H ||
-        current === TILE_TYPES.PATH_V ||
-        current === TILE_TYPES.CORNER_1 ||
-        current === TILE_TYPES.CORNER_2
-      ) {
+      if (current === TILE_TYPES.WATER || isPathTile(current)) {
         continue;
       }
 
       if (hasWaterNeighbor(clone, world, x, y)) {
-        tiles[idx] = TILE_TYPES.WATER_BORDER;
+        tiles[idx] = classifyWaterShoreTile(clone, world, x, y);
       }
     }
   }
+}
+
+function paintTreePatches(tiles, world) {
+  const forestCount = Math.max(
+    GENERATION_RULES.forest.blobMin,
+    Math.floor((world.cols + world.rows) / GENERATION_RULES.forest.blobDivisor)
+  );
+  for (let i = 0; i < forestCount; i += 1) {
+    const cx = Math.floor(seededValue(9001 + i * 31, 9007 + i * 37) * world.cols);
+    const cy = Math.floor(seededValue(9011 + i * 41, 9013 + i * 43) * world.rows);
+    const radius = 2 + Math.floor(seededValue(9029 + i * 47, 9031 + i * 53) * 5);
+
+    for (let y = Math.max(0, cy - radius - 1); y <= Math.min(world.rows - 1, cy + radius + 1); y += 1) {
+      for (let x = Math.max(0, cx - radius - 1); x <= Math.min(world.cols - 1, cx + radius + 1); x += 1) {
+        const idx = indexOf(world, x, y);
+        if (tiles[idx] !== TILE_TYPES.GRASS) continue;
+        const dist = Math.hypot(x - cx, y - cy);
+        const edgeNoise = seededValue(9041 + x * 11 + i, 9043 + y * 13 + i) * 1.5;
+        if (dist <= radius - 0.2 + edgeNoise) {
+          const variant = seededValue(9053 + x * 7 + i, 9059 + y * 5 + i);
+          tiles[idx] = variant > 0.5 ? TILE_TYPES.TREES_2 : TILE_TYPES.TREES;
+        }
+      }
+    }
+  }
+
+  for (let y = 0; y < world.rows; y += 1) {
+    for (let x = 0; x < world.cols; x += 1) {
+      const idx = indexOf(world, x, y);
+      if (tiles[idx] !== TILE_TYPES.GRASS) continue;
+      const noise = seededValue(9101 + x * 19, 9103 + y * 23);
+      const cluster = seededValue(9109 + Math.floor(x / 3), 9113 + Math.floor(y / 3));
+      if (noise > 0.9 && cluster > 0.62) {
+        const variant = seededValue(9127 + x * 3, 9133 + y * 11);
+        tiles[idx] = variant > 0.45 ? TILE_TYPES.TREES_2 : TILE_TYPES.TREES;
+      }
+    }
+  }
+}
+
+function isPathTile(type) {
+  return (
+    type === TILE_TYPES.PATH_H ||
+    type === TILE_TYPES.PATH_V ||
+    type === TILE_TYPES.CORNER_1 ||
+    type === TILE_TYPES.CORNER_2 ||
+    type === TILE_TYPES.CORNER_3 ||
+    type === TILE_TYPES.CORNER_4
+  );
 }
 
 function hasWaterNeighbor(tiles, world, x, y) {
@@ -140,6 +254,25 @@ function hasWaterNeighbor(tiles, world, x, y) {
     if (tiles[indexOf(world, nx, ny)] === TILE_TYPES.WATER) return true;
   }
   return false;
+}
+
+function isWaterTile(tiles, world, x, y) {
+  if (!inBounds(world, x, y)) return false;
+  return tiles[indexOf(world, x, y)] === TILE_TYPES.WATER;
+}
+
+function classifyWaterShoreTile(tiles, world, x, y) {
+  const n = isWaterTile(tiles, world, x, y - 1);
+  const e = isWaterTile(tiles, world, x + 1, y);
+  const s = isWaterTile(tiles, world, x, y + 1);
+  const w = isWaterTile(tiles, world, x - 1, y);
+
+  if (n && e && !s && !w) return TILE_TYPES.WATER_CORNER_1;
+  if (e && s && !n && !w) return TILE_TYPES.WATER_CORNER_2;
+  if (s && w && !n && !e) return TILE_TYPES.WATER_CORNER_3;
+  if (w && n && !e && !s) return TILE_TYPES.WATER_CORNER_4;
+
+  return TILE_TYPES.WATER_BORDER;
 }
 
 export function getWorldSize(world) {

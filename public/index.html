@@ -8,12 +8,16 @@
   </head>
   <body>
     <main class="game-shell">
-      <canvas id="gameCanvas" width="960" height="540"></canvas>
+      <canvas id="gameCanvas"></canvas>
       <canvas id="minimapCanvas" width="220" height="220"></canvas>
       <div class="hud">
         <strong>Controls:</strong> Click anywhere on the map to move
       </div>
     </main>
+    <footer class="status-bar">
+      <span>Pasos:</span>
+      <strong id="stepCount">0</strong>
+    </footer>
     <script type="module" src="/index.js"></script>
   </body>
 </html>
