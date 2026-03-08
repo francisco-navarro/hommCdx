@@ -4,7 +4,14 @@ const HOST = "127.0.0.1";
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
 const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-const TICK_MS = 50;
+
+function parseTickMs(value, fallback = 33) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(16, Math.min(100, parsed));
+}
+
+const TICK_MS = parseTickMs(process.env.TICK_MS);
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",

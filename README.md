@@ -14,6 +14,17 @@ npm start
 
 Open `http://127.0.0.1:3000`.
 
+### Optional performance tuning
+
+- Server tick rate is configurable with `TICK_MS` (default: `33`, min `16`, max `100`).
+
+```bash
+TICK_MS=16 npm start
+```
+
+- Tile debug labels are disabled by default. Enable only when needed:
+  - `http://127.0.0.1:3000/?debugTiles=1`
+
 ## Test
 
 ```bash
