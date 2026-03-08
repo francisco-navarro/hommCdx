@@ -6,8 +6,8 @@ function worldToTile(world, x, y) {
 
 function tileToCenter(world, col, row) {
   return {
-    x: col * world.tileSize + world.tileSize / 2,
-    y: row * world.tileSize + world.tileSize / 2,
+    x: col * world.tileSize,
+    y: row * world.tileSize,
   };
 }
 

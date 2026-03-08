@@ -104,6 +104,22 @@ function attachWebSocketServer(server, game, host, port) {
               game.applyMove(client.sessionId, Number(data.canvasX), Number(data.canvasY), client.view);
               const snap = game.getSnapshotFor(client.sessionId, client.view);
               send(client, { type: "state", ...snap });
+              continue;
+            }
+
+            if (data.type === "plan_move") {
+              client.view = clampView(data.viewWidth, data.viewHeight);
+              game.planMove(client.sessionId, Number(data.canvasX), Number(data.canvasY), client.view);
+              const snap = game.getSnapshotFor(client.sessionId, client.view);
+              send(client, { type: "state", ...snap });
+              continue;
+            }
+
+            if (data.type === "confirm_move") {
+              client.view = clampView(data.viewWidth, data.viewHeight);
+              game.confirmMove(client.sessionId);
+              const snap = game.getSnapshotFor(client.sessionId, client.view);
+              send(client, { type: "state", ...snap });
             }
           }
         } catch {

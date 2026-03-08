@@ -12,7 +12,7 @@ test("worldToTile and tileToCenter map consistently", () => {
   const t = worldToTile(world, 70, 95);
   assert.deepEqual(t, { col: 2, row: 2 });
   const c = tileToCenter(world, t.col, t.row);
-  assert.deepEqual(c, { x: 80, y: 80 });
+  assert.deepEqual(c, { x: 64, y: 64 });
 });
 
 test("findLastWalkableTileOnLine stops before blocked tile", () => {

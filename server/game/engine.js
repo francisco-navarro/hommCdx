@@ -4,9 +4,9 @@ const { pathToFileURL } = require("url");
 const {
   worldToTile,
   tileToCenter,
-  findLastWalkableTileOnLine,
   clampMovementToWalkableSegment,
 } = require("./collision");
+const { findPathAStar } = require("./pathfinding");
 
 function toModuleUrl(filePath) {
   return pathToFileURL(filePath).href;
@@ -48,6 +48,12 @@ async function createGameEngine(publicDir) {
   function isWalkableWorld(x, y) {
     const t = worldToTile(world, x, y);
     return isWalkableTile(t.col, t.row);
+  }
+
+  function worldToNearestTile(worldX, worldY) {
+    const col = Math.max(0, Math.min(world.cols - 1, Math.round(worldX / world.tileSize)));
+    const row = Math.max(0, Math.min(world.rows - 1, Math.round(worldY / world.tileSize)));
+    return { col, row };
   }
 
   function findNearestWalkableCenter(worldX, worldY) {
@@ -101,6 +107,8 @@ async function createGameEngine(publicDir) {
           speed: PLAYER_CONFIG.speed,
         },
         moveTarget: { x: spawn.x, y: spawn.y, active: false },
+        plannedPath: [],
+        activePath: [],
         traveledDistance: 0,
       });
     } else {
@@ -115,6 +123,11 @@ async function createGameEngine(publicDir) {
     lastTickTime = now;
 
     for (const p of players.values()) {
+      if (!p.moveTarget.active && p.activePath.length > 0) {
+        const next = p.activePath.shift();
+        p.moveTarget = { x: next.x, y: next.y, active: true };
+      }
+
       const prevX = p.player.x;
       const prevY = p.player.y;
       const movement = updatePlayerTowardsTarget(p.player, p.moveTarget, dt);
@@ -126,9 +139,12 @@ async function createGameEngine(publicDir) {
         isWalkableWorld
       );
       p.player = { ...p.player, x: corrected.x, y: corrected.y };
-      p.moveTarget = corrected.blocked
-        ? { ...p.moveTarget, x: corrected.x, y: corrected.y, active: false }
-        : movement.moveTarget;
+      if (corrected.blocked) {
+        p.moveTarget = { ...p.moveTarget, x: corrected.x, y: corrected.y, active: false };
+        p.activePath = [];
+      } else {
+        p.moveTarget = movement.moveTarget;
+      }
       p.traveledDistance += Math.hypot(p.player.x - prevX, p.player.y - prevY);
     }
   }
@@ -171,7 +187,12 @@ async function createGameEngine(publicDir) {
     }
 
     return {
-      state: { player: me.player, moveTarget: me.moveTarget, camera },
+      state: {
+        player: me.player,
+        moveTarget: me.moveTarget,
+        camera,
+        plannedPath: me.plannedPath,
+      },
       players: others,
       selfSessionId: sessionId,
       steps: Math.floor(me.traveledDistance / world.tileSize),
@@ -179,9 +200,9 @@ async function createGameEngine(publicDir) {
     };
   }
 
-  function applyMove(sessionId, canvasX, canvasY, view) {
+  function worldPathFromClick(sessionId, canvasX, canvasY, view) {
     const me = players.get(sessionId);
-    if (!me) return;
+    if (!me) return [];
     const camera = computeCamera(me.player, view, worldSize.width, worldSize.height);
     const target = screenClickToWorld(
       { clientX: canvasX, clientY: canvasY },
@@ -192,13 +213,35 @@ async function createGameEngine(publicDir) {
       worldSize.width,
       worldSize.height
     );
-    const fromTile = worldToTile(world, me.player.x, me.player.y);
-    const targetTile = worldToTile(world, target.x, target.y);
-    const lastWalkable = findLastWalkableTileOnLine(fromTile, targetTile, isWalkableTile);
-    const center = tileToCenter(world, lastWalkable.col, lastWalkable.row);
-    const centerX = center.x;
-    const centerY = center.y;
-    me.moveTarget = { x: centerX, y: centerY, active: true };
+    const startTile = worldToNearestTile(me.player.x, me.player.y);
+    const goalTile = worldToNearestTile(target.x, target.y);
+    const tilePath = findPathAStar(startTile, goalTile, world, isWalkableTile);
+    if (tilePath.length <= 1) return [];
+
+    const worldPath = [];
+    for (let i = 1; i < tilePath.length; i += 1) {
+      worldPath.push(tileToCenter(world, tilePath[i].col, tilePath[i].row));
+    }
+    return worldPath;
+  }
+
+  function planMove(sessionId, canvasX, canvasY, view) {
+    const me = players.get(sessionId);
+    if (!me) return;
+    me.plannedPath = worldPathFromClick(sessionId, canvasX, canvasY, view);
+  }
+
+  function confirmMove(sessionId) {
+    const me = players.get(sessionId);
+    if (!me || me.plannedPath.length === 0) return;
+    me.activePath = me.plannedPath.map((step) => ({ x: step.x, y: step.y }));
+    me.plannedPath = [];
+    me.moveTarget = { ...me.moveTarget, active: false };
+  }
+
+  function applyMove(sessionId, canvasX, canvasY, view) {
+    planMove(sessionId, canvasX, canvasY, view);
+    confirmMove(sessionId);
   }
 
   return {
@@ -207,6 +250,8 @@ async function createGameEngine(publicDir) {
     tick,
     ensurePlayer,
     getSnapshotFor,
+    planMove,
+    confirmMove,
     applyMove,
     isWalkableAtWorld: isWalkableWorld,
   };

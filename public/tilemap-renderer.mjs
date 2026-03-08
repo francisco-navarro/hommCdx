@@ -1,13 +1,17 @@
 import { TILE_CATALOG, TILE_TYPES } from "./map-config.mjs";
 import { worldToIsometric } from "./game-logic.mjs";
 
+const NORMALIZED_SOURCE_WIDTH = 1024;
+const NORMALIZED_SOURCE_HEIGHT = 885;
+
 export async function loadTileSprites() {
   const entries = Object.values(TILE_CATALOG).map((tile) => [tile.id, tile.image]);
 
   const sprites = {};
   await Promise.all(
     entries.map(async ([tileType, src]) => {
-      sprites[tileType] = await loadImage(src);
+      const img = await loadImage(src);
+      sprites[tileType] = normalizeSprite(img, NORMALIZED_SOURCE_WIDTH, NORMALIZED_SOURCE_HEIGHT);
     })
   );
 
@@ -21,6 +25,26 @@ function loadImage(src) {
     img.onerror = () => reject(new Error(`Failed to load sprite: ${src}`));
     img.src = src;
   });
+}
+
+function normalizeSprite(image, targetWidth, targetHeight) {
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return image;
+
+  // Center-crop to a consistent source rectangle for all tile assets.
+  const srcX = Math.max(0, Math.floor((image.width - targetWidth) / 2));
+  const srcY = Math.max(0, Math.floor((image.height - targetHeight) / 2));
+  const srcW = Math.min(targetWidth, image.width);
+  const srcH = Math.min(targetHeight, image.height);
+  const dstX = Math.floor((targetWidth - srcW) / 2);
+  const dstY = Math.floor((targetHeight - srcH) / 2);
+
+  ctx.clearRect(0, 0, targetWidth, targetHeight);
+  ctx.drawImage(image, srcX, srcY, srcW, srcH, dstX, dstY, srcW, srcH);
+  return canvas;
 }
 
 export function createTileMapRenderer(ctx, world, view, sprites) {

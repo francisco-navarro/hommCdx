@@ -1,5 +1,5 @@
 import { WORLD_CONFIG } from "./config.mjs";
-import { worldToIsometric } from "./game-logic.mjs";
+import { screenClickToWorld, worldToIsometric } from "./game-logic.mjs";
 import { renderMinimap } from "./minimap-renderer.mjs";
 import { createTileMapRenderer, loadTileSprites } from "./tilemap-renderer.mjs";
 
@@ -23,6 +23,7 @@ let ws = null;
 let backendReady = false;
 let sessionId = null;
 let playerName = null;
+let pendingTargetKey = null;
 
 function ensureSession() {
   let id = localStorage.getItem(SESSION_KEY);
@@ -163,6 +164,82 @@ function renderPlayersOverlay(currentState) {
   }
 }
 
+function worldToTileKey(worldPos) {
+  const col = Math.max(0, Math.min(world.cols - 1, Math.round(worldPos.x / world.tileSize)));
+  const row = Math.max(0, Math.min(world.rows - 1, Math.round(worldPos.y / world.tileSize)));
+  return `${col},${row}`;
+}
+
+function getPlannedTargetKey(currentState) {
+  const planned = currentState?.plannedPath;
+  if (!planned || planned.length === 0) return null;
+  return worldToTileKey(planned[planned.length - 1]);
+}
+
+function drawArrow(fromIso, toIso) {
+  const dx = toIso.x - fromIso.x;
+  const dy = toIso.y - fromIso.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 1) return;
+
+  const ux = dx / len;
+  const uy = dy / len;
+  const headSize = 7;
+  const baseX = toIso.x - ux * (headSize * 1.5);
+  const baseY = toIso.y - uy * (headSize * 1.5);
+  const nx = -uy;
+  const ny = ux;
+
+  gameCtx.strokeStyle = "#ffffff";
+  gameCtx.lineWidth = 8;
+  gameCtx.beginPath();
+  gameCtx.moveTo(fromIso.x, fromIso.y);
+  gameCtx.lineTo(baseX, baseY);
+  gameCtx.stroke();
+
+  gameCtx.strokeStyle = "#22c55e";
+  gameCtx.lineWidth = 5;
+  gameCtx.beginPath();
+  gameCtx.moveTo(fromIso.x, fromIso.y);
+  gameCtx.lineTo(baseX, baseY);
+  gameCtx.stroke();
+
+  gameCtx.fillStyle = "#ffffff";
+  gameCtx.beginPath();
+  gameCtx.moveTo(toIso.x, toIso.y);
+  gameCtx.lineTo(baseX + nx * headSize * 0.65, baseY + ny * headSize * 0.65);
+  gameCtx.lineTo(baseX - nx * headSize * 0.65, baseY - ny * headSize * 0.65);
+  gameCtx.closePath();
+  gameCtx.fill();
+
+  gameCtx.fillStyle = "#22c55e";
+  gameCtx.beginPath();
+  gameCtx.moveTo(toIso.x, toIso.y);
+  gameCtx.lineTo(baseX + nx * headSize * 0.5, baseY + ny * headSize * 0.5);
+  gameCtx.lineTo(baseX - nx * headSize * 0.5, baseY - ny * headSize * 0.5);
+  gameCtx.closePath();
+  gameCtx.fill();
+}
+
+function renderPlannedPathOverlay(currentState) {
+  if (!currentState || !currentState.plannedPath || currentState.plannedPath.length === 0) return;
+
+  let prevIso = worldToIsometric(
+    currentState.player.x,
+    currentState.player.y,
+    world,
+    currentState.camera,
+    view
+  );
+
+  for (let i = 0; i < currentState.plannedPath.length; i += 1) {
+    const step = currentState.plannedPath[i];
+    const stepIso = worldToIsometric(step.x, step.y, world, currentState.camera, view);
+    drawArrow(prevIso, stepIso);
+    prevIso = stepIso;
+  }
+}
+
 async function initGame() {
   ensureSession();
   resizeCanvases();
@@ -173,6 +250,7 @@ async function initGame() {
   function frame() {
     if (state) {
       renderWorld(state.camera, state.chunk);
+      renderPlannedPathOverlay(state);
       renderPlayersOverlay(state);
       renderMinimap(miniCtx, minimapCanvas, state, world, view);
     }
@@ -180,19 +258,42 @@ async function initGame() {
   }
 
   gameCanvas.addEventListener("click", (event) => {
-    if (!backendReady) return;
+    if (!backendReady || !state) return;
     const rect = gameCanvas.getBoundingClientRect();
     const scaleX = gameCanvas.width / rect.width;
     const scaleY = gameCanvas.height / rect.height;
     const canvasX = (event.clientX - rect.left) * scaleX;
     const canvasY = (event.clientY - rect.top) * scaleY;
+    const worldPos = screenClickToWorld(
+      event,
+      rect,
+      view,
+      state.camera,
+      world,
+      world.cols * world.tileSize,
+      world.rows * world.tileSize
+    );
+    const clickedKey = worldToTileKey(worldPos);
+    const plannedTargetKey = getPlannedTargetKey(state);
+
+    if (plannedTargetKey && pendingTargetKey === plannedTargetKey && clickedKey === plannedTargetKey) {
+      sendWs({
+        type: "confirm_move",
+        viewWidth: view.width,
+        viewHeight: view.height,
+      });
+      pendingTargetKey = null;
+      return;
+    }
+
     sendWs({
-      type: "move",
+      type: "plan_move",
       canvasX,
       canvasY,
       viewWidth: view.width,
       viewHeight: view.height,
     });
+    pendingTargetKey = clickedKey;
   });
 
   window.addEventListener("resize", () => {
