@@ -254,7 +254,7 @@ function paintWaterBorders(tiles, world) {
         continue;
       }
 
-      if (hasWaterNeighbor(clone, world, x, y)) {
+      if (hasWaterInfluence(clone, world, x, y)) {
         tiles[idx] = classifyWaterShoreTile(clone, world, x, y);
       }
     }
@@ -389,6 +389,17 @@ function hasWaterNeighbor(tiles, world, x, y) {
   return false;
 }
 
+function hasWaterInfluence(tiles, world, x, y) {
+  for (let ny = y - 1; ny <= y + 1; ny += 1) {
+    for (let nx = x - 1; nx <= x + 1; nx += 1) {
+      if (nx === x && ny === y) continue;
+      if (!inBounds(world, nx, ny)) continue;
+      if (tiles[indexOf(world, nx, ny)] === TILE_TYPES.WATER) return true;
+    }
+  }
+  return false;
+}
+
 function isWaterTile(tiles, world, x, y) {
   if (!inBounds(world, x, y)) return false;
   return tiles[indexOf(world, x, y)] === TILE_TYPES.WATER;
@@ -399,17 +410,44 @@ function classifyWaterShoreTile(tiles, world, x, y) {
   const e = isWaterTile(tiles, world, x + 1, y);
   const s = isWaterTile(tiles, world, x, y + 1);
   const w = isWaterTile(tiles, world, x - 1, y);
+  const ne = isWaterTile(tiles, world, x + 1, y - 1);
+  const se = isWaterTile(tiles, world, x + 1, y + 1);
+  const sw = isWaterTile(tiles, world, x - 1, y + 1);
+  const nw = isWaterTile(tiles, world, x - 1, y - 1);
 
+  // Inward (concave) corners: diagonal water while both touching cardinals are land.
+  if (!n && !e && ne) return TILE_TYPES.WATER_CORNER_IN_NE;
+  if (!e && !s && se) return TILE_TYPES.WATER_CORNER_IN_SE;
+  if (!s && !w && sw) return TILE_TYPES.WATER_CORNER_IN_SW;
+  if (!w && !n && nw) return TILE_TYPES.WATER_CORNER_IN_NW;
+
+  // Outward (convex) corners: two adjacent cardinal water neighbors.
+  if (n && e && !s && !w) return TILE_TYPES.WATER_CORNER_OUT_NE;
+  if (e && s && !n && !w) return TILE_TYPES.WATER_CORNER_OUT_SE;
+  if (s && w && !n && !e) return TILE_TYPES.WATER_CORNER_OUT_SW;
+  if (w && n && !e && !s) return TILE_TYPES.WATER_CORNER_OUT_NW;
+
+  // Three-sided water coverage: border points to the only dry side.
+  if (!n && e && s && w) return TILE_TYPES.WATER_BORDER_N;
+  if (!e && n && s && w) return TILE_TYPES.WATER_BORDER_E;
+  if (!s && n && e && w) return TILE_TYPES.WATER_BORDER_S;
+  if (!w && n && e && s) return TILE_TYPES.WATER_BORDER_W;
+
+  // Straight borders.
   if (n && !e && !s && !w) return TILE_TYPES.WATER_BORDER_N;
   if (e && !n && !s && !w) return TILE_TYPES.WATER_BORDER_E;
   if (s && !n && !e && !w) return TILE_TYPES.WATER_BORDER_S;
   if (w && !n && !e && !s) return TILE_TYPES.WATER_BORDER_W;
 
-  // For corners/complex shorelines, force one of the directional borders only.
+  // Mixed patterns fallback: prioritize directional borders, then diagonal corners.
   if (n) return TILE_TYPES.WATER_BORDER_N;
   if (e) return TILE_TYPES.WATER_BORDER_E;
   if (s) return TILE_TYPES.WATER_BORDER_S;
   if (w) return TILE_TYPES.WATER_BORDER_W;
+  if (ne) return TILE_TYPES.WATER_CORNER_IN_NE;
+  if (se) return TILE_TYPES.WATER_CORNER_IN_SE;
+  if (sw) return TILE_TYPES.WATER_CORNER_IN_SW;
+  if (nw) return TILE_TYPES.WATER_CORNER_IN_NW;
   return TILE_TYPES.WATER_BORDER_N;
 }
 

@@ -56,6 +56,15 @@ async function createGameEngine(publicDir) {
     return { col, row };
   }
 
+  function clampCameraToWorld(x, y) {
+    const nx = Number(x);
+    const ny = Number(y);
+    return {
+      x: Number.isFinite(nx) ? Math.max(0, Math.min(worldSize.width, nx)) : worldSize.width / 2,
+      y: Number.isFinite(ny) ? Math.max(0, Math.min(worldSize.height, ny)) : worldSize.height / 2,
+    };
+  }
+
   function findNearestWalkableCenter(worldX, worldY) {
     const start = worldToTile(world, worldX, worldY);
     if (isWalkableTile(start.col, start.row)) {
@@ -176,11 +185,13 @@ async function createGameEngine(publicDir) {
     return { startCol, startRow, cols, rows, tiles: chunkTiles };
   }
 
-  function getSnapshotFor(sessionId, view) {
+  function getSnapshotFor(sessionId, view, cameraOverride = null) {
     const me = players.get(sessionId);
     if (!me) return null;
 
-    const camera = computeCamera(me.player, view, worldSize.width, worldSize.height);
+    const camera = cameraOverride
+      ? clampCameraToWorld(cameraOverride.x, cameraOverride.y)
+      : computeCamera(me.player, view, worldSize.width, worldSize.height);
     const others = [];
     for (const p of players.values()) {
       others.push({ id: p.id, name: p.name, x: p.player.x, y: p.player.y, color: p.color });
@@ -225,10 +236,32 @@ async function createGameEngine(publicDir) {
     return worldPath;
   }
 
+  function worldPathFromTargetWorld(sessionId, targetX, targetY) {
+    const me = players.get(sessionId);
+    if (!me) return [];
+    const clamped = clampCameraToWorld(targetX, targetY);
+    const startTile = worldToNearestTile(me.player.x, me.player.y);
+    const goalTile = worldToNearestTile(clamped.x, clamped.y);
+    const tilePath = findPathAStar(startTile, goalTile, world, isWalkableTile);
+    if (tilePath.length <= 1) return [];
+
+    const worldPath = [];
+    for (let i = 1; i < tilePath.length; i += 1) {
+      worldPath.push(tileToCenter(world, tilePath[i].col, tilePath[i].row));
+    }
+    return worldPath;
+  }
+
   function planMove(sessionId, canvasX, canvasY, view) {
     const me = players.get(sessionId);
     if (!me) return;
     me.plannedPath = worldPathFromClick(sessionId, canvasX, canvasY, view);
+  }
+
+  function planMoveToWorld(sessionId, worldX, worldY) {
+    const me = players.get(sessionId);
+    if (!me) return;
+    me.plannedPath = worldPathFromTargetWorld(sessionId, Number(worldX), Number(worldY));
   }
 
   function confirmMove(sessionId) {
@@ -244,15 +277,23 @@ async function createGameEngine(publicDir) {
     confirmMove(sessionId);
   }
 
+  function applyMoveToWorld(sessionId, worldX, worldY) {
+    planMoveToWorld(sessionId, worldX, worldY);
+    confirmMove(sessionId);
+  }
+
   return {
     world,
     players,
     tick,
     ensurePlayer,
     getSnapshotFor,
+    clampCameraToWorld,
     planMove,
+    planMoveToWorld,
     confirmMove,
     applyMove,
+    applyMoveToWorld,
     isWalkableAtWorld: isWalkableWorld,
   };
 }

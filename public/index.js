@@ -24,6 +24,7 @@ let backendReady = false;
 let sessionId = null;
 let playerName = null;
 let pendingTargetKey = null;
+let pendingFollowOnMoveStart = false;
 
 function ensureSession() {
   let id = localStorage.getItem(SESSION_KEY);
@@ -83,6 +84,36 @@ function renderBackendError(message) {
   gameCtx.fillText(message, 40, 120);
 }
 
+function getWorldBounds() {
+  return {
+    width: world.cols * world.tileSize,
+    height: world.rows * world.tileSize,
+  };
+}
+
+function applySnapshot(data) {
+  const wasMoving = state?.moveTarget?.active === true;
+
+  state = {
+    ...data.state,
+    players: data.players || [],
+    selfSessionId: data.selfSessionId,
+    chunk: data.chunk,
+  };
+  stepCountEl.textContent = String(data.steps);
+
+  const isMoving = state?.moveTarget?.active === true;
+  if (pendingFollowOnMoveStart && !wasMoving && isMoving) {
+    pendingFollowOnMoveStart = false;
+    sendWs({
+      type: "view",
+      viewWidth: view.width,
+      viewHeight: view.height,
+      followPlayer: true,
+    });
+  }
+}
+
 function connectWs() {
   return new Promise((resolve, reject) => {
     const protocol = location.protocol === "https:" ? "wss" : "ws";
@@ -108,26 +139,14 @@ function connectWs() {
 
       if (data.type === "bootstrap") {
         world = data.world;
-        state = {
-          ...data.state,
-          players: data.players || [],
-          selfSessionId: data.selfSessionId,
-          chunk: data.chunk,
-        };
-        stepCountEl.textContent = String(data.steps);
+        applySnapshot(data);
         backendReady = true;
         resolve();
         return;
       }
 
       if (data.type === "state") {
-        state = {
-          ...data.state,
-          players: data.players || [],
-          selfSessionId: data.selfSessionId,
-          chunk: data.chunk,
-        };
-        stepCountEl.textContent = String(data.steps);
+        applySnapshot(data);
       }
     });
 
@@ -257,18 +276,14 @@ async function initGame() {
   gameCanvas.addEventListener("click", (event) => {
     if (!backendReady || !state) return;
     const rect = gameCanvas.getBoundingClientRect();
-    const scaleX = gameCanvas.width / rect.width;
-    const scaleY = gameCanvas.height / rect.height;
-    const canvasX = (event.clientX - rect.left) * scaleX;
-    const canvasY = (event.clientY - rect.top) * scaleY;
     const worldPos = screenClickToWorld(
       event,
       rect,
       view,
       state.camera,
       world,
-      world.cols * world.tileSize,
-      world.rows * world.tileSize
+      getWorldBounds().width,
+      getWorldBounds().height
     );
     const clickedKey = worldToTileKey(worldPos);
     const plannedTargetKey = getPlannedTargetKey(state);
@@ -279,18 +294,37 @@ async function initGame() {
         viewWidth: view.width,
         viewHeight: view.height,
       });
+      pendingFollowOnMoveStart = true;
       pendingTargetKey = null;
       return;
     }
 
     sendWs({
       type: "plan_move",
-      canvasX,
-      canvasY,
+      worldX: worldPos.x,
+      worldY: worldPos.y,
       viewWidth: view.width,
       viewHeight: view.height,
     });
     pendingTargetKey = clickedKey;
+  });
+
+  minimapCanvas.addEventListener("click", (event) => {
+    if (!backendReady || !state) return;
+    const rect = minimapCanvas.getBoundingClientRect();
+    const mmX = ((event.clientX - rect.left) / rect.width) * minimapCanvas.width;
+    const mmY = ((event.clientY - rect.top) / rect.height) * minimapCanvas.height;
+    const bounds = getWorldBounds();
+    const cameraX = Math.max(0, Math.min(bounds.width, (mmX / minimapCanvas.width) * bounds.width));
+    const cameraY = Math.max(0, Math.min(bounds.height, (mmY / minimapCanvas.height) * bounds.height));
+
+    sendWs({
+      type: "view",
+      viewWidth: view.width,
+      viewHeight: view.height,
+      cameraX,
+      cameraY,
+    });
   });
 
   window.addEventListener("resize", () => {
