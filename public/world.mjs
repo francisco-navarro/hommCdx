@@ -14,6 +14,7 @@ export function createWorldTiles(world) {
   paintWaterBorders(tiles, world);
   paintTreePatches(tiles, world);
   paintGrassVariation(tiles, world);
+  paintStructures(tiles, world);
 
   return tiles;
 }
@@ -309,6 +310,54 @@ function paintGrassVariation(tiles, world) {
         tiles[idx] = TILE_TYPES.GRASS_2;
       }
     }
+  }
+}
+
+function paintStructures(tiles, world) {
+  const structureRules = GENERATION_RULES.structures;
+  const sawmillCount = Math.max(
+    structureRules.sawmillMin,
+    Math.floor((world.cols + world.rows) / structureRules.sawmillDivisor)
+  );
+  const goldMineCount = Math.max(
+    structureRules.goldMineMin,
+    Math.floor((world.cols + world.rows) / structureRules.goldMineDivisor)
+  );
+  const castleRedCount = Math.max(
+    structureRules.castleRedMin,
+    Math.floor((world.cols + world.rows) / structureRules.castleRedDivisor)
+  );
+  const castleYellowCount = Math.max(
+    structureRules.castleYellowMin,
+    Math.floor((world.cols + world.rows) / structureRules.castleYellowDivisor)
+  );
+
+  placeStructureType(tiles, world, TILE_TYPES.SAWMILL, sawmillCount, 12001, structureRules.maxPlaceAttempts);
+  placeStructureType(tiles, world, TILE_TYPES.GOLD_MINE, goldMineCount, 13001, structureRules.maxPlaceAttempts);
+  placeStructureType(tiles, world, TILE_TYPES.CASTLE_RED, castleRedCount, 14001, structureRules.maxPlaceAttempts);
+  placeStructureType(
+    tiles,
+    world,
+    TILE_TYPES.CASTLE_YELLOW,
+    castleYellowCount,
+    15001,
+    structureRules.maxPlaceAttempts
+  );
+}
+
+function placeStructureType(tiles, world, tileType, targetCount, seedBase, maxAttempts) {
+  let placed = 0;
+  for (let attempt = 0; attempt < maxAttempts && placed < targetCount; attempt += 1) {
+    const x = Math.floor(seededValue(seedBase + attempt * 17, seedBase + 3 + attempt * 19) * world.cols);
+    const y = Math.floor(seededValue(seedBase + 5 + attempt * 23, seedBase + 7 + attempt * 29) * world.rows);
+    const idx = indexOf(world, x, y);
+    const current = tiles[idx];
+
+    if (current !== TILE_TYPES.GRASS && current !== TILE_TYPES.GRASS_2) continue;
+    if (hasWaterNeighbor(tiles, world, x, y)) continue;
+
+    tiles[idx] = tileType;
+    placed += 1;
   }
 }
 

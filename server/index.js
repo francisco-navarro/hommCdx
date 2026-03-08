@@ -10,7 +10,7 @@ async function startServer() {
     handleStatic(req, res, PUBLIC_DIR, HOST, PORT);
   });
 
-  const stopTicker = attachWebSocketServer(server, game, HOST, PORT);
+  const stopRealtime = attachWebSocketServer(server, game, HOST, PORT);
   let shuttingDown = false;
 
   server.listen(PORT, HOST, () => {
@@ -22,7 +22,13 @@ async function startServer() {
     shuttingDown = true;
     console.log(`[shutdown] Signal received: ${signal}`);
     console.log("[shutdown] Stopping game ticker...");
-    stopTicker();
+    stopRealtime();
+    if (typeof server.closeIdleConnections === "function") {
+      server.closeIdleConnections();
+    }
+    if (typeof server.closeAllConnections === "function") {
+      server.closeAllConnections();
+    }
     console.log("[shutdown] Closing HTTP/WebSocket server...");
     server.close((error) => {
       if (error) {

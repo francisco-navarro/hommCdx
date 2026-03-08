@@ -1,9 +1,7 @@
 import { TILE_CATALOG, TILE_TYPES } from "./map-config.mjs";
 import { worldToIsometric } from "./game-logic.mjs";
 
-const DEBUG_TILES =
-  typeof window !== "undefined" &&
-  new URLSearchParams(window.location.search).get("debugTiles") === "1";
+const DEBUG_TILES = true;
 const NORMALIZED_SOURCE_WIDTH = 1024;
 const NORMALIZED_SOURCE_HEIGHT = 885;
 const TILE_DEBUG_NAMES = Object.fromEntries(

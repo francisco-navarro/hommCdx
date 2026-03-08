@@ -144,7 +144,21 @@ function attachWebSocketServer(server, game, host, port) {
     }
   });
 
-  return () => clearInterval(ticker);
+  return () => {
+    clearInterval(ticker);
+
+    for (const client of clients) {
+      client.closed = true;
+      client.buffer = Buffer.alloc(0);
+      try {
+        client.socket.end();
+      } catch {}
+      try {
+        client.socket.destroy();
+      } catch {}
+    }
+    clients.clear();
+  };
 }
 
 module.exports = {

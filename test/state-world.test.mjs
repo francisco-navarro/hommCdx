@@ -30,9 +30,13 @@ test("createWorldTiles is deterministic and within expected tile ids", () => {
   let hasCorner = false;
   let hasTrees = false;
   let hasGrass2 = false;
+  let hasSawmill = false;
+  let hasGoldMine = false;
+  let hasCastleRed = false;
+  let hasCastleYellow = false;
 
   for (const tile of first) {
-    assert.ok(tile >= 0 && tile <= 19);
+    assert.ok(tile >= 0 && tile <= 23);
     seen.add(tile);
     if (tile === 1 || tile === 2 || tile === 5 || tile === 6 || tile === 7 || tile === 8 || tile === 15) {
       hasRoad = true;
@@ -43,6 +47,10 @@ test("createWorldTiles is deterministic and within expected tile ids", () => {
     if (tile >= 10 && tile <= 13) hasWaterCorner = true;
     if (tile === 9 || tile === 14) hasTrees = true;
     if (tile === 16) hasGrass2 = true;
+    if (tile === 20) hasSawmill = true;
+    if (tile === 21) hasGoldMine = true;
+    if (tile === 22) hasCastleRed = true;
+    if (tile === 23) hasCastleYellow = true;
   }
 
   assert.equal(hasRoad, true);
@@ -52,6 +60,10 @@ test("createWorldTiles is deterministic and within expected tile ids", () => {
   assert.equal(hasWaterCorner, false);
   assert.equal(hasTrees, true);
   assert.equal(hasGrass2, true);
+  assert.equal(hasSawmill, true);
+  assert.equal(hasGoldMine, true);
+  assert.equal(hasCastleRed, true);
+  assert.equal(hasCastleYellow, true);
   assert.ok(seen.size >= 5);
 });
 

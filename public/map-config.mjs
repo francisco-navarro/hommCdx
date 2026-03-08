@@ -19,6 +19,10 @@ export const TILE_TYPES = {
   WATER_BORDER_E: 17,
   WATER_BORDER_S: 18,
   WATER_BORDER_W: 19,
+  SAWMILL: 20,
+  GOLD_MINE: 21,
+  CASTLE_RED: 22,
+  CASTLE_YELLOW: 23,
   // Legacy aliases (kept for compatibility)
   CORNER_1: 5,
   CORNER_2: 6,
@@ -207,6 +211,42 @@ export const TILE_CATALOG = {
     walkable: false,
     minimapColor: [0.09, 0.4, 0.14],
   },
+  [TILE_TYPES.SAWMILL]: {
+    id: TILE_TYPES.SAWMILL,
+    key: "sawmill",
+    image: "/img/map/sawmill.png",
+    terrain: "structure",
+    group: "poi",
+    walkable: false,
+    minimapColor: [0.62, 0.43, 0.21],
+  },
+  [TILE_TYPES.GOLD_MINE]: {
+    id: TILE_TYPES.GOLD_MINE,
+    key: "gold_mine",
+    image: "/img/map/gold-mine.png",
+    terrain: "structure",
+    group: "poi",
+    walkable: false,
+    minimapColor: [0.84, 0.74, 0.2],
+  },
+  [TILE_TYPES.CASTLE_RED]: {
+    id: TILE_TYPES.CASTLE_RED,
+    key: "castle_red",
+    image: "/img/map/castles/castle-red.png",
+    terrain: "structure",
+    group: "poi",
+    walkable: false,
+    minimapColor: [0.73, 0.24, 0.26],
+  },
+  [TILE_TYPES.CASTLE_YELLOW]: {
+    id: TILE_TYPES.CASTLE_YELLOW,
+    key: "castle_yellow",
+    image: "/img/map/castles/castle-yellow.png",
+    terrain: "structure",
+    group: "poi",
+    walkable: false,
+    minimapColor: [0.84, 0.71, 0.22],
+  },
 };
 
 export const TILE_COLORS = Object.keys(TILE_CATALOG).map((id) => {
@@ -226,6 +266,17 @@ export const GENERATION_RULES = {
   forest: {
     blobMin: 6,
     blobDivisor: 18,
+  },
+  structures: {
+    sawmillMin: 1,
+    sawmillDivisor: 55,
+    goldMineMin: 1,
+    goldMineDivisor: 65,
+    castleRedMin: 1,
+    castleRedDivisor: 110,
+    castleYellowMin: 1,
+    castleYellowDivisor: 110,
+    maxPlaceAttempts: 350,
   },
 };
 
