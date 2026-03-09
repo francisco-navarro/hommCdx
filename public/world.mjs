@@ -15,6 +15,7 @@ export function createWorldTiles(world) {
   paintTreePatches(tiles, world);
   paintGrassVariation(tiles, world);
   paintStructures(tiles, world);
+  enforceCastleSouthRoads(tiles, world);
 
   return tiles;
 }
@@ -55,14 +56,7 @@ function paintWaterBodies(tiles, world) {
 
 function paintRoadNetwork(tiles, world) {
   const pathMask = buildPathMask(world);
-
-  for (let y = 0; y < world.rows; y += 1) {
-    for (let x = 0; x < world.cols; x += 1) {
-      const idx = indexOf(world, x, y);
-      if (!pathMask[idx]) continue;
-      tiles[idx] = classifyPathTile(pathMask, world, x, y);
-    }
-  }
+  applyPathMaskToTiles(pathMask, tiles, world);
 }
 
 function buildPathMask(world) {
@@ -323,6 +317,22 @@ function paintStructures(tiles, world) {
     structureRules.goldMineMin,
     Math.floor((world.cols + world.rows) / structureRules.goldMineDivisor)
   );
+  const ironMineCount = Math.max(
+    structureRules.ironMineMin,
+    Math.floor((world.cols + world.rows) / structureRules.ironMineDivisor)
+  );
+  const glassMineCount = Math.max(
+    structureRules.glassMineMin,
+    Math.floor((world.cols + world.rows) / structureRules.glassMineDivisor)
+  );
+  const alchemyLabCount = Math.max(
+    structureRules.alchemyLabMin,
+    Math.floor((world.cols + world.rows) / structureRules.alchemyLabDivisor)
+  );
+  const gemMineCount = Math.max(
+    structureRules.gemMineMin,
+    Math.floor((world.cols + world.rows) / structureRules.gemMineDivisor)
+  );
   const castleRedCount = Math.max(
     structureRules.castleRedMin,
     Math.floor((world.cols + world.rows) / structureRules.castleRedDivisor)
@@ -332,8 +342,8 @@ function paintStructures(tiles, world) {
     Math.floor((world.cols + world.rows) / structureRules.castleYellowDivisor)
   );
 
-  placeStructureType(tiles, world, TILE_TYPES.CASTLE_RED, castleRedCount, 14001, structureRules.maxPlaceAttempts);
-  placeStructureType(
+  placeCastleType(tiles, world, TILE_TYPES.CASTLE_RED, castleRedCount, 14001, structureRules.maxPlaceAttempts);
+  placeCastleType(
     tiles,
     world,
     TILE_TYPES.CASTLE_YELLOW,
@@ -343,6 +353,10 @@ function paintStructures(tiles, world) {
   );
   placeStructureType(tiles, world, TILE_TYPES.SAWMILL, sawmillCount, 12001, structureRules.maxPlaceAttempts);
   placeStructureType(tiles, world, TILE_TYPES.GOLD_MINE, goldMineCount, 13001, structureRules.maxPlaceAttempts);
+  placeStructureType(tiles, world, TILE_TYPES.IRON_MINE, ironMineCount, 16001, structureRules.maxPlaceAttempts);
+  placeStructureType(tiles, world, TILE_TYPES.GLASS_MINE, glassMineCount, 17001, structureRules.maxPlaceAttempts);
+  placeStructureType(tiles, world, TILE_TYPES.ALCHEMY_LAB, alchemyLabCount, 18001, structureRules.maxPlaceAttempts);
+  placeStructureType(tiles, world, TILE_TYPES.GEM_MINE, gemMineCount, 19001, structureRules.maxPlaceAttempts);
 }
 
 function placeStructureType(tiles, world, tileType, targetCount, seedBase, maxAttempts) {
@@ -355,9 +369,177 @@ function placeStructureType(tiles, world, tileType, targetCount, seedBase, maxAt
 
     if (current !== TILE_TYPES.GRASS && current !== TILE_TYPES.GRASS_2) continue;
     if (hasWaterNeighbor(tiles, world, x, y)) continue;
-
+    if (isNearCastleDoorCorridor(tiles, world, x, y)) continue;
     tiles[idx] = tileType;
     placed += 1;
+  }
+}
+
+function placeCastleType(tiles, world, castleType, targetCount, seedBase, maxAttempts) {
+  let placed = 0;
+  const footprintType =
+    castleType === TILE_TYPES.CASTLE_RED ? TILE_TYPES.CASTLE_RED_FOOTPRINT : TILE_TYPES.CASTLE_YELLOW_FOOTPRINT;
+
+  for (let attempt = 0; attempt < maxAttempts && placed < targetCount; attempt += 1) {
+    const x = Math.floor(seededValue(seedBase + attempt * 17, seedBase + 3 + attempt * 19) * world.cols);
+    const y = Math.floor(seededValue(seedBase + 5 + attempt * 23, seedBase + 7 + attempt * 29) * world.rows);
+    if (x + 1 >= world.cols || y + 2 >= world.rows) continue;
+
+    const footprint = [
+      [x, y],
+      [x + 1, y],
+      [x, y + 1],
+      [x + 1, y + 1],
+    ];
+    let blocked = false;
+    for (let i = 0; i < footprint.length; i += 1) {
+      const [fx, fy] = footprint[i];
+      const t = tiles[indexOf(world, fx, fy)];
+      if (t !== TILE_TYPES.GRASS && t !== TILE_TYPES.GRASS_2) {
+        blocked = true;
+        break;
+      }
+      if (hasWaterNeighbor(tiles, world, fx, fy)) {
+        blocked = true;
+        break;
+      }
+    }
+    if (blocked) continue;
+    if (isNearCastleDoorCorridor(tiles, world, x, y)) continue;
+
+    // Keep door strip below 2x2 footprint route-capable.
+    const southLeft = tiles[indexOf(world, x, y + 2)];
+    const southRight = tiles[indexOf(world, x + 1, y + 2)];
+    if (!canRouteThroughTileType(southLeft) || !canRouteThroughTileType(southRight)) continue;
+
+    tiles[indexOf(world, x, y)] = castleType;
+    tiles[indexOf(world, x + 1, y)] = footprintType;
+    tiles[indexOf(world, x, y + 1)] = footprintType;
+    tiles[indexOf(world, x + 1, y + 1)] = footprintType;
+    placed += 1;
+  }
+}
+
+function isNearCastleDoorCorridor(tiles, world, x, y) {
+  const anchors = getCastleAnchors(tiles, world);
+  for (let i = 0; i < anchors.length; i += 1) {
+    const a = anchors[i];
+    const doorY = a.y + 2;
+    if (doorY >= world.rows) continue;
+    if (y === doorY && x >= a.x - 1 && x <= a.x + 2) return true;
+    if (y === doorY + 1 && x >= a.x && x <= a.x + 1) return true;
+  }
+  return false;
+}
+
+function enforceCastleSouthRoads(tiles, world) {
+  const pathMask = buildPathMaskFromTiles(tiles, world);
+  const castles = getCastleAnchors(tiles, world);
+
+  for (let i = 0; i < castles.length; i += 1) {
+    const c = castles[i];
+    const sy = c.y + 2;
+    if (sy >= world.rows) continue;
+    const doorTiles = [
+      { x: c.x, y: sy },
+      { x: c.x + 1, y: sy },
+    ];
+
+    for (let j = 0; j < doorTiles.length; j += 1) {
+      const d = doorTiles[j];
+      if (!inBounds(world, d.x, d.y)) continue;
+      const southIdx = indexOf(world, d.x, d.y);
+      if (!canRouteThroughTileType(tiles[southIdx])) continue;
+      pathMask[southIdx] = 1;
+      if (!hasPathNeighbor(pathMask, world, d.x, d.y)) {
+        connectPathMaskToNearestRoad(pathMask, tiles, world, d.x, d.y);
+      }
+    }
+  }
+
+  applyPathMaskToTiles(pathMask, tiles, world);
+  enforceCastleDoorOrientation(pathMask, tiles, world, castles);
+}
+
+function buildPathMaskFromTiles(tiles, world) {
+  const mask = new Uint8Array(world.cols * world.rows);
+  for (let y = 0; y < world.rows; y += 1) {
+    for (let x = 0; x < world.cols; x += 1) {
+      if (isPathTile(tiles[indexOf(world, x, y)])) {
+        mask[indexOf(world, x, y)] = 1;
+      }
+    }
+  }
+  return mask;
+}
+
+function applyPathMaskToTiles(pathMask, tiles, world) {
+  for (let y = 0; y < world.rows; y += 1) {
+    for (let x = 0; x < world.cols; x += 1) {
+      const idx = indexOf(world, x, y);
+      if (!pathMask[idx]) continue;
+      if (!canPaintPathOverTile(tiles[idx])) continue;
+      tiles[idx] = classifyPathTile(pathMask, world, x, y);
+    }
+  }
+}
+
+function hasPathNeighbor(pathMask, world, x, y) {
+  if (inBounds(world, x, y - 1) && pathMask[indexOf(world, x, y - 1)]) return true;
+  if (inBounds(world, x + 1, y) && pathMask[indexOf(world, x + 1, y)]) return true;
+  if (inBounds(world, x, y + 1) && pathMask[indexOf(world, x, y + 1)]) return true;
+  if (inBounds(world, x - 1, y) && pathMask[indexOf(world, x - 1, y)]) return true;
+  return false;
+}
+
+function connectPathMaskToNearestRoad(pathMask, tiles, world, startX, startY) {
+  const total = world.cols * world.rows;
+  const startIdx = indexOf(world, startX, startY);
+  const visited = new Uint8Array(total);
+  const prev = new Int32Array(total);
+  prev.fill(-1);
+  const queue = [startIdx];
+  visited[startIdx] = 1;
+  let qHead = 0;
+  let foundIdx = -1;
+
+  while (qHead < queue.length) {
+    const cur = queue[qHead++];
+    const cx = cur % world.cols;
+    const cy = Math.floor(cur / world.cols);
+
+    if (cur !== startIdx && pathMask[cur]) {
+      foundIdx = cur;
+      break;
+    }
+
+    const neighbors = [
+      [cx, cy - 1],
+      [cx + 1, cy],
+      [cx, cy + 1],
+      [cx - 1, cy],
+    ];
+
+    for (let i = 0; i < neighbors.length; i += 1) {
+      const [nx, ny] = neighbors[i];
+      if (!inBounds(world, nx, ny)) continue;
+      const nIdx = indexOf(world, nx, ny);
+      if (visited[nIdx]) continue;
+      const nTile = tiles[nIdx];
+      const traversable = pathMask[nIdx] || canRouteThroughTileType(nTile);
+      if (!traversable) continue;
+      visited[nIdx] = 1;
+      prev[nIdx] = cur;
+      queue.push(nIdx);
+    }
+  }
+
+  if (foundIdx === -1) return;
+  let cur = foundIdx;
+  while (cur !== -1) {
+    pathMask[cur] = 1;
+    if (cur === startIdx) break;
+    cur = prev[cur];
   }
 }
 
@@ -371,6 +553,105 @@ function isPathTile(type) {
     type === TILE_TYPES.PATH_CORNER_NE ||
     type === TILE_TYPES.PATH_CORNER_T
   );
+}
+
+function isCastleTile(type) {
+  return (
+    type === TILE_TYPES.CASTLE_RED ||
+    type === TILE_TYPES.CASTLE_YELLOW ||
+    type === TILE_TYPES.CASTLE_RED_FOOTPRINT ||
+    type === TILE_TYPES.CASTLE_YELLOW_FOOTPRINT
+  );
+}
+
+function isStructureTile(type) {
+  return (
+    type === TILE_TYPES.SAWMILL ||
+    type === TILE_TYPES.GOLD_MINE ||
+    type === TILE_TYPES.IRON_MINE ||
+    type === TILE_TYPES.GLASS_MINE ||
+    type === TILE_TYPES.ALCHEMY_LAB ||
+    type === TILE_TYPES.GEM_MINE ||
+    isCastleTile(type)
+  );
+}
+
+function isWaterEdgeTile(type) {
+  return (
+    type === TILE_TYPES.WATER_BORDER_N ||
+    type === TILE_TYPES.WATER_BORDER_E ||
+    type === TILE_TYPES.WATER_BORDER_S ||
+    type === TILE_TYPES.WATER_BORDER_W ||
+    type === TILE_TYPES.WATER_CORNER_OUT_NE ||
+    type === TILE_TYPES.WATER_CORNER_OUT_SE ||
+    type === TILE_TYPES.WATER_CORNER_OUT_SW ||
+    type === TILE_TYPES.WATER_CORNER_OUT_NW ||
+    type === TILE_TYPES.WATER_CORNER_IN_NE ||
+    type === TILE_TYPES.WATER_CORNER_IN_SE ||
+    type === TILE_TYPES.WATER_CORNER_IN_SW ||
+    type === TILE_TYPES.WATER_CORNER_IN_NW
+  );
+}
+
+function canRouteThroughTileType(type) {
+  if (type === TILE_TYPES.WATER) return false;
+  if (isWaterEdgeTile(type)) return false;
+  if (isStructureTile(type)) return false;
+  return true;
+}
+
+function canPaintPathOverTile(type) {
+  if (isStructureTile(type)) return false;
+  if (type === TILE_TYPES.WATER) return false;
+  if (isWaterEdgeTile(type)) return false;
+  return true;
+}
+
+function enforceCastleDoorOrientation(pathMask, tiles, world, castles) {
+  for (let i = 0; i < castles.length; i += 1) {
+    const c = castles[i];
+    const sy = c.y + 2;
+    if (sy >= world.rows) continue;
+    const doorTiles = [
+      { x: c.x, y: sy },
+      { x: c.x + 1, y: sy },
+    ];
+    for (let j = 0; j < doorTiles.length; j += 1) {
+      const d = doorTiles[j];
+      if (!inBounds(world, d.x, d.y)) continue;
+      const southIdx = indexOf(world, d.x, d.y);
+      if (!isPathTile(tiles[southIdx])) continue;
+      tiles[southIdx] = classifyPathTileWithCastleNorth(pathMask, world, d.x, d.y);
+    }
+  }
+}
+
+function getCastleAnchors(tiles, world) {
+  const anchors = [];
+  for (let y = 0; y < world.rows; y += 1) {
+    for (let x = 0; x < world.cols; x += 1) {
+      const tile = tiles[indexOf(world, x, y)];
+      if (tile !== TILE_TYPES.CASTLE_RED && tile !== TILE_TYPES.CASTLE_YELLOW) continue;
+      if (x + 1 >= world.cols || y + 1 >= world.rows) continue;
+      anchors.push({ x, y });
+    }
+  }
+  return anchors;
+}
+
+function classifyPathTileWithCastleNorth(pathMask, world, x, y) {
+  const n = true;
+  const e = inBounds(world, x + 1, y) && pathMask[indexOf(world, x + 1, y)] === 1;
+  const s = inBounds(world, x, y + 1) && pathMask[indexOf(world, x, y + 1)] === 1;
+  const w = inBounds(world, x - 1, y) && pathMask[indexOf(world, x - 1, y)] === 1;
+  const neighborCount = Number(n) + Number(e) + Number(s) + Number(w);
+
+  if (n && e && !s && !w) return TILE_TYPES.PATH_CORNER_NW;
+  if (w && n && !e && !s) return TILE_TYPES.PATH_CORNER_SW;
+  if (neighborCount >= 3) return TILE_TYPES.PATH_CORNER_T;
+  if ((n || s) && !(e || w)) return TILE_TYPES.PATH_V;
+  if (n && s) return TILE_TYPES.PATH_V;
+  return TILE_TYPES.PATH_V;
 }
 
 function hasWaterNeighbor(tiles, world, x, y) {

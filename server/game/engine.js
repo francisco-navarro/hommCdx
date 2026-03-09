@@ -33,6 +33,8 @@ async function createGameEngine(publicDir) {
   const tiles = Array.from(createWorldTiles(world));
   const players = new Map();
   let lastTickTime = Date.now();
+  const MIN_ZOOM = 0.75;
+  const MAX_ZOOM = 2.5;
 
   function getTileId(col, row) {
     if (col < 0 || row < 0 || col >= world.cols || row >= world.rows) return null;
@@ -63,6 +65,12 @@ async function createGameEngine(publicDir) {
       x: Number.isFinite(nx) ? Math.max(0, Math.min(worldSize.width, nx)) : worldSize.width / 2,
       y: Number.isFinite(ny) ? Math.max(0, Math.min(worldSize.height, ny)) : worldSize.height / 2,
     };
+  }
+
+  function clampZoom(value, fallback = 1) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, parsed));
   }
 
   function findNearestWalkableCenter(worldX, worldY) {
@@ -158,11 +166,12 @@ async function createGameEngine(publicDir) {
     }
   }
 
-  function getChunkForView(camera, view) {
+  function getChunkForView(camera, view, zoom = 1) {
+    const z = clampZoom(zoom);
     const centerCol = Math.floor(camera.x / world.tileSize);
     const centerRow = Math.floor(camera.y / world.tileSize);
-    const halfCols = Math.ceil(view.width / world.isoTileWidth) + 8;
-    const halfRows = Math.ceil(view.height / world.isoTileHeight) + 8;
+    const halfCols = Math.ceil(view.width / (world.isoTileWidth * z)) + 8;
+    const halfRows = Math.ceil(view.height / (world.isoTileHeight * z)) + 8;
 
     const startCol = Math.max(0, centerCol - halfCols);
     const endCol = Math.min(world.cols - 1, centerCol + halfCols);
@@ -185,9 +194,10 @@ async function createGameEngine(publicDir) {
     return { startCol, startRow, cols, rows, tiles: chunkTiles };
   }
 
-  function getSnapshotFor(sessionId, view, cameraOverride = null) {
+  function getSnapshotFor(sessionId, view, cameraOverride = null, zoom = 1) {
     const me = players.get(sessionId);
     if (!me) return null;
+    const z = clampZoom(zoom);
 
     const camera = cameraOverride
       ? clampCameraToWorld(cameraOverride.x, cameraOverride.y)
@@ -203,11 +213,12 @@ async function createGameEngine(publicDir) {
         moveTarget: me.moveTarget,
         camera,
         plannedPath: me.plannedPath,
+        zoom: z,
       },
       players: others,
       selfSessionId: sessionId,
       steps: Math.floor(me.traveledDistance / world.tileSize),
-      chunk: getChunkForView(camera, view),
+      chunk: getChunkForView(camera, view, z),
     };
   }
 
@@ -289,6 +300,7 @@ async function createGameEngine(publicDir) {
     ensurePlayer,
     getSnapshotFor,
     clampCameraToWorld,
+    clampZoom,
     planMove,
     planMoveToWorld,
     confirmMove,

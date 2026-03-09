@@ -70,6 +70,45 @@ body {
   font-size: 18px;
 }
 
+.zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 14px;
+}
+
+.zoom-controls button {
+  min-width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 6px;
+}
+
+.zoom-controls button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.zoom-controls button:active {
+  transform: translateY(1px);
+}
+
+.zoom-controls button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+#zoomValue {
+  min-width: 52px;
+  text-align: center;
+  font-size: 15px;
+}
+
 @media (max-width: 700px) {
   #minimapCanvas {
     width: 150px;
@@ -78,5 +117,25 @@ body {
 
   .hud {
     font-size: 12px;
+  }
+
+  .status-bar {
+    font-size: 15px;
+    gap: 8px;
+  }
+
+  .zoom-controls {
+    margin-left: 8px;
+    gap: 6px;
+  }
+
+  .zoom-controls button {
+    min-width: 28px;
+    height: 28px;
+  }
+
+  #zoomValue {
+    min-width: 46px;
+    font-size: 13px;
   }
 }

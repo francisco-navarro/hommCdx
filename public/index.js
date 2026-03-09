@@ -9,10 +9,13 @@ const NAME_KEY = "homm_player_name";
 const gameCanvas = document.getElementById("gameCanvas");
 const minimapCanvas = document.getElementById("minimapCanvas");
 const stepCountEl = document.getElementById("stepCount");
+const zoomOutBtn = document.getElementById("zoomOutBtn");
+const zoomInBtn = document.getElementById("zoomInBtn");
+const zoomValueEl = document.getElementById("zoomValue");
 const gameCtx = gameCanvas.getContext("2d");
 const miniCtx = minimapCanvas.getContext("2d");
 
-if (!gameCtx || !miniCtx || !stepCountEl) {
+if (!gameCtx || !miniCtx || !stepCountEl || !zoomOutBtn || !zoomInBtn || !zoomValueEl) {
   throw new Error("2D canvas is not supported in this browser.");
 }
 
@@ -25,6 +28,17 @@ let sessionId = null;
 let playerName = null;
 let pendingTargetKey = null;
 let pendingFollowOnMoveStart = false;
+let zoom = 1;
+let baseRenderMetrics = {
+  isoTileWidth: WORLD_CONFIG.isoTileWidth,
+  isoTileHeight: WORLD_CONFIG.isoTileHeight,
+  spriteDrawWidth: WORLD_CONFIG.spriteDrawWidth,
+  spriteDrawHeight: WORLD_CONFIG.spriteDrawHeight,
+};
+
+const MIN_ZOOM = 0.75;
+const MAX_ZOOM = 2.5;
+const ZOOM_STEP = 0.25;
 
 function ensureSession() {
   let id = localStorage.getItem(SESSION_KEY);
@@ -91,6 +105,38 @@ function getWorldBounds() {
   };
 }
 
+function clampZoom(value) {
+  return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
+}
+
+function updateZoomLabel() {
+  zoomValueEl.textContent = `${Math.round(zoom * 100)}%`;
+  zoomOutBtn.disabled = zoom <= MIN_ZOOM + 0.001;
+  zoomInBtn.disabled = zoom >= MAX_ZOOM - 0.001;
+}
+
+function applyZoomToWorld() {
+  world.isoTileWidth = Math.round(baseRenderMetrics.isoTileWidth * zoom);
+  world.isoTileHeight = Math.round(baseRenderMetrics.isoTileHeight * zoom);
+  world.spriteDrawWidth = Math.round(baseRenderMetrics.spriteDrawWidth * zoom);
+  world.spriteDrawHeight = Math.round(baseRenderMetrics.spriteDrawHeight * zoom);
+}
+
+function setZoom(nextZoom, { sync = true } = {}) {
+  const next = clampZoom(nextZoom);
+  if (Math.abs(next - zoom) < 0.001) return;
+  zoom = next;
+  applyZoomToWorld();
+  updateZoomLabel();
+  if (!sync || !backendReady) return;
+  sendWs({
+    type: "view",
+    viewWidth: view.width,
+    viewHeight: view.height,
+    zoom,
+  });
+}
+
 function applySnapshot(data) {
   const wasMoving = state?.moveTarget?.active === true;
 
@@ -101,6 +147,14 @@ function applySnapshot(data) {
     chunk: data.chunk,
   };
   stepCountEl.textContent = String(data.steps);
+  if (Number.isFinite(data.state?.zoom)) {
+    const incomingZoom = clampZoom(Number(data.state.zoom));
+    if (Math.abs(incomingZoom - zoom) >= 0.001) {
+      zoom = incomingZoom;
+      applyZoomToWorld();
+      updateZoomLabel();
+    }
+  }
 
   const isMoving = state?.moveTarget?.active === true;
   if (pendingFollowOnMoveStart && !wasMoving && isMoving) {
@@ -110,6 +164,7 @@ function applySnapshot(data) {
       viewWidth: view.width,
       viewHeight: view.height,
       followPlayer: true,
+      zoom,
     });
   }
 }
@@ -126,6 +181,7 @@ function connectWs() {
         name: playerName,
         viewWidth: view.width,
         viewHeight: view.height,
+        zoom,
       });
     });
 
@@ -139,6 +195,13 @@ function connectWs() {
 
       if (data.type === "bootstrap") {
         world = data.world;
+        baseRenderMetrics = {
+          isoTileWidth: world.isoTileWidth,
+          isoTileHeight: world.isoTileHeight,
+          spriteDrawWidth: world.spriteDrawWidth,
+          spriteDrawHeight: world.spriteDrawHeight,
+        };
+        applyZoomToWorld();
         applySnapshot(data);
         backendReady = true;
         resolve();
@@ -259,6 +322,7 @@ function renderPlannedPathOverlay(currentState) {
 async function initGame() {
   ensureSession();
   resizeCanvases();
+  updateZoomLabel();
   const sprites = await loadTileSprites();
   await connectWs();
   const renderWorld = createTileMapRenderer(gameCtx, world, view, sprites);
@@ -268,7 +332,7 @@ async function initGame() {
       renderWorld(state.camera, state.chunk);
       renderPlannedPathOverlay(state);
       renderPlayersOverlay(state);
-      renderMinimap(miniCtx, minimapCanvas, state, world, view);
+      renderMinimap(miniCtx, minimapCanvas, state, world, view, zoom);
     }
     requestAnimationFrame(frame);
   }
@@ -293,6 +357,7 @@ async function initGame() {
         type: "confirm_move",
         viewWidth: view.width,
         viewHeight: view.height,
+        zoom,
       });
       pendingFollowOnMoveStart = true;
       pendingTargetKey = null;
@@ -305,6 +370,7 @@ async function initGame() {
       worldY: worldPos.y,
       viewWidth: view.width,
       viewHeight: view.height,
+      zoom,
     });
     pendingTargetKey = clickedKey;
   });
@@ -324,12 +390,21 @@ async function initGame() {
       viewHeight: view.height,
       cameraX,
       cameraY,
+      zoom,
     });
+  });
+
+  zoomOutBtn.addEventListener("click", () => {
+    setZoom(zoom - ZOOM_STEP);
+  });
+
+  zoomInBtn.addEventListener("click", () => {
+    setZoom(zoom + ZOOM_STEP);
   });
 
   window.addEventListener("resize", () => {
     resizeCanvases();
-    sendWs({ type: "view", viewWidth: view.width, viewHeight: view.height });
+    sendWs({ type: "view", viewWidth: view.width, viewHeight: view.height, zoom });
   });
 
   requestAnimationFrame(frame);

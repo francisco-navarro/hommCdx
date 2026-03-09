@@ -26,7 +26,7 @@ function drawCompass(ctx, mmW, mmH) {
   ctx.restore();
 }
 
-export function renderMinimap(ctx, canvas, state, world, view) {
+export function renderMinimap(ctx, canvas, state, world, view, zoom = 1) {
   const mmW = canvas.width;
   const mmH = canvas.height;
   ctx.clearRect(0, 0, mmW, mmH);
@@ -62,12 +62,21 @@ export function renderMinimap(ctx, canvas, state, world, view) {
     ctx.fill();
   }
 
-  const topLeftX = Math.max(0, Math.min(worldSize.width - view.width, state.camera.x - view.width / 2));
-  const topLeftY = Math.max(0, Math.min(worldSize.height - view.height, state.camera.y - view.height / 2));
+  const z = Number.isFinite(zoom) && zoom > 0 ? zoom : 1;
+  const effectiveViewW = view.width / z;
+  const effectiveViewH = view.height / z;
+  const topLeftX = Math.max(
+    0,
+    Math.min(worldSize.width - effectiveViewW, state.camera.x - effectiveViewW / 2)
+  );
+  const topLeftY = Math.max(
+    0,
+    Math.min(worldSize.height - effectiveViewH, state.camera.y - effectiveViewH / 2)
+  );
   const vx = (topLeftX / worldSize.width) * mmW;
   const vy = (topLeftY / worldSize.height) * mmH;
-  const vw = (view.width / worldSize.width) * mmW;
-  const vh = (view.height / worldSize.height) * mmH;
+  const vw = (effectiveViewW / worldSize.width) * mmW;
+  const vh = (effectiveViewH / worldSize.height) * mmH;
 
   ctx.strokeStyle = "#ffffff";
   ctx.lineWidth = 1.5;

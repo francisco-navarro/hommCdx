@@ -32,11 +32,17 @@ test("createWorldTiles is deterministic and within expected tile ids", () => {
   let hasGrass2 = false;
   let hasSawmill = false;
   let hasGoldMine = false;
+  let hasIronMine = false;
+  let hasGlassMine = false;
+  let hasAlchemyLab = false;
+  let hasGemMine = false;
   let hasCastleRed = false;
   let hasCastleYellow = false;
+  let hasCastleRedFootprint = false;
+  let hasCastleYellowFootprint = false;
 
   for (const tile of first) {
-    assert.ok(tile >= 0 && tile <= 27);
+    assert.ok(tile >= 0 && tile <= 33);
     seen.add(tile);
     if (tile === 1 || tile === 2 || tile === 5 || tile === 6 || tile === 7 || tile === 8 || tile === 15) {
       hasRoad = true;
@@ -49,8 +55,14 @@ test("createWorldTiles is deterministic and within expected tile ids", () => {
     if (tile === 16) hasGrass2 = true;
     if (tile === 20) hasSawmill = true;
     if (tile === 21) hasGoldMine = true;
+    if (tile === 28) hasIronMine = true;
+    if (tile === 29) hasGlassMine = true;
+    if (tile === 30) hasAlchemyLab = true;
+    if (tile === 31) hasGemMine = true;
     if (tile === 22) hasCastleRed = true;
     if (tile === 23) hasCastleYellow = true;
+    if (tile === 32) hasCastleRedFootprint = true;
+    if (tile === 33) hasCastleYellowFootprint = true;
   }
 
   assert.equal(hasRoad, true);
@@ -62,9 +74,33 @@ test("createWorldTiles is deterministic and within expected tile ids", () => {
   assert.equal(hasGrass2, true);
   assert.equal(hasSawmill, true);
   assert.equal(hasGoldMine, true);
+  assert.equal(hasIronMine, true);
+  assert.equal(hasGlassMine, true);
+  assert.equal(hasAlchemyLab, true);
+  assert.equal(hasGemMine, true);
   assert.equal(hasCastleRed, true);
   assert.equal(hasCastleYellow, true);
+  assert.equal(hasCastleRedFootprint, true);
+  assert.equal(hasCastleYellowFootprint, true);
   assert.ok(seen.size >= 5);
+
+  const isRoadTile = (tile) =>
+    tile === 1 || tile === 2 || tile === 5 || tile === 6 || tile === 7 || tile === 8 || tile === 15;
+  for (let row = 0; row < world.rows; row += 1) {
+    for (let col = 0; col < world.cols; col += 1) {
+      const idx = row * world.cols + col;
+      const tile = first[idx];
+      if (tile !== 22 && tile !== 23) continue;
+      assert.ok(col + 1 < world.cols);
+      assert.ok(row + 2 < world.rows);
+      const southLeft = first[(row + 2) * world.cols + col];
+      const southRight = first[(row + 2) * world.cols + (col + 1)];
+      assert.equal(isRoadTile(southLeft), true);
+      assert.equal(isRoadTile(southRight), true);
+      assert.notEqual(southLeft, 1);
+      assert.notEqual(southRight, 1);
+    }
+  }
 });
 
 test("createInitialState starts player centered in world", () => {

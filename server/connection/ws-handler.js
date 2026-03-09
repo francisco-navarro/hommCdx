@@ -12,7 +12,7 @@ function attachWebSocketServer(server, game, host, port) {
   function broadcastState() {
     for (const client of clients) {
       if (!client.sessionId) continue;
-      const snap = game.getSnapshotFor(client.sessionId, client.view, client.cameraOverride);
+      const snap = game.getSnapshotFor(client.sessionId, client.view, client.cameraOverride, client.zoom);
       if (snap) send(client, { type: "state", ...snap });
     }
   }
@@ -55,6 +55,7 @@ function attachWebSocketServer(server, game, host, port) {
         name: null,
         view: { width: 960, height: 540 },
         cameraOverride: null,
+        zoom: 1,
         closed: false,
       };
       clients.add(client);
@@ -84,10 +85,16 @@ function attachWebSocketServer(server, game, host, port) {
               client.name = data.name.trim().slice(0, 24);
               client.view = clampView(data.viewWidth, data.viewHeight);
               client.cameraOverride = null;
+              client.zoom = game.clampZoom(data.zoom, 1);
               game.ensurePlayer(client.sessionId, client.name);
               console.log(`Player connected: ${client.name} (${client.sessionId})`);
 
-              const snap = game.getSnapshotFor(client.sessionId, client.view, client.cameraOverride);
+              const snap = game.getSnapshotFor(
+                client.sessionId,
+                client.view,
+                client.cameraOverride,
+                client.zoom
+              );
               send(client, { type: "bootstrap", world: game.world, ...snap });
               continue;
             }
@@ -96,44 +103,68 @@ function attachWebSocketServer(server, game, host, port) {
 
             if (data.type === "view") {
               client.view = clampView(data.viewWidth, data.viewHeight);
+              client.zoom = game.clampZoom(data.zoom, client.zoom);
               if (data.followPlayer === true) {
                 client.cameraOverride = null;
               } else if (Number.isFinite(Number(data.cameraX)) && Number.isFinite(Number(data.cameraY))) {
                 client.cameraOverride = game.clampCameraToWorld(Number(data.cameraX), Number(data.cameraY));
               }
-              const snap = game.getSnapshotFor(client.sessionId, client.view, client.cameraOverride);
+              const snap = game.getSnapshotFor(
+                client.sessionId,
+                client.view,
+                client.cameraOverride,
+                client.zoom
+              );
               send(client, { type: "state", ...snap });
               continue;
             }
 
             if (data.type === "move") {
               client.view = clampView(data.viewWidth, data.viewHeight);
+              client.zoom = game.clampZoom(data.zoom, client.zoom);
               if (Number.isFinite(Number(data.worldX)) && Number.isFinite(Number(data.worldY))) {
                 game.applyMoveToWorld(client.sessionId, Number(data.worldX), Number(data.worldY));
               } else {
                 game.applyMove(client.sessionId, Number(data.canvasX), Number(data.canvasY), client.view);
               }
-              const snap = game.getSnapshotFor(client.sessionId, client.view, client.cameraOverride);
+              const snap = game.getSnapshotFor(
+                client.sessionId,
+                client.view,
+                client.cameraOverride,
+                client.zoom
+              );
               send(client, { type: "state", ...snap });
               continue;
             }
 
             if (data.type === "plan_move") {
               client.view = clampView(data.viewWidth, data.viewHeight);
+              client.zoom = game.clampZoom(data.zoom, client.zoom);
               if (Number.isFinite(Number(data.worldX)) && Number.isFinite(Number(data.worldY))) {
                 game.planMoveToWorld(client.sessionId, Number(data.worldX), Number(data.worldY));
               } else {
                 game.planMove(client.sessionId, Number(data.canvasX), Number(data.canvasY), client.view);
               }
-              const snap = game.getSnapshotFor(client.sessionId, client.view, client.cameraOverride);
+              const snap = game.getSnapshotFor(
+                client.sessionId,
+                client.view,
+                client.cameraOverride,
+                client.zoom
+              );
               send(client, { type: "state", ...snap });
               continue;
             }
 
             if (data.type === "confirm_move") {
               client.view = clampView(data.viewWidth, data.viewHeight);
+              client.zoom = game.clampZoom(data.zoom, client.zoom);
               game.confirmMove(client.sessionId);
-              const snap = game.getSnapshotFor(client.sessionId, client.view, client.cameraOverride);
+              const snap = game.getSnapshotFor(
+                client.sessionId,
+                client.view,
+                client.cameraOverride,
+                client.zoom
+              );
               send(client, { type: "state", ...snap });
             }
           }
