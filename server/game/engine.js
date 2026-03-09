@@ -26,15 +26,57 @@ async function createGameEngine(publicDir) {
   const { WORLD_CONFIG, PLAYER_CONFIG } = configMod;
   const { createWorldTiles, getWorldSize } = worldMod;
   const { updatePlayerTowardsTarget, clampPlayerToWorld, computeCamera, screenClickToWorld } = logicMod;
-  const { tileIsWalkable } = configMod;
+  const { tileIsWalkable, TILE_TYPES } = configMod;
 
   const world = { ...WORLD_CONFIG };
   const worldSize = getWorldSize(world);
   const tiles = Array.from(createWorldTiles(world));
+  const resourceNodeConfig = new Map([
+    [TILE_TYPES.GOLD_MINE, { resource: "gold", amount: 500 }],
+    [TILE_TYPES.IRON_MINE, { resource: "iron", amount: 5 }],
+    [TILE_TYPES.GLASS_MINE, { resource: "crystal", amount: 4 }],
+    [TILE_TYPES.ALCHEMY_LAB, { resource: "mercury", amount: 3 }],
+    [TILE_TYPES.GEM_MINE, { resource: "crystal", amount: 6 }],
+  ]);
+  const resourceNodes = new Map();
   const players = new Map();
   let lastTickTime = Date.now();
   const MIN_ZOOM = 0.75;
   const MAX_ZOOM = 2.5;
+
+  function createInitialResources() {
+    return {
+      gold: 0,
+      iron: 0,
+      crystal: 0,
+      mercury: 0,
+    };
+  }
+
+  function buildResourceNodes() {
+    resourceNodes.clear();
+    for (let row = 0; row < world.rows; row += 1) {
+      for (let col = 0; col < world.cols; col += 1) {
+        const idx = row * world.cols + col;
+        const tileType = tiles[idx];
+        const conf = resourceNodeConfig.get(tileType);
+        if (!conf) continue;
+        const key = `${col},${row}`;
+        const center = tileToCenter(world, col, row);
+        resourceNodes.set(key, {
+          key,
+          col,
+          row,
+          x: center.x,
+          y: center.y,
+          resource: conf.resource,
+          amount: conf.amount,
+        });
+      }
+    }
+  }
+
+  buildResourceNodes();
 
   function getTileId(col, row) {
     if (col < 0 || row < 0 || col >= world.cols || row >= world.rows) return null;
@@ -127,6 +169,8 @@ async function createGameEngine(publicDir) {
         plannedPath: [],
         activePath: [],
         traveledDistance: 0,
+        resources: createInitialResources(),
+        harvestedResourceNodes: new Set(),
       });
     } else {
       players.get(sessionId).name = name;
@@ -163,6 +207,21 @@ async function createGameEngine(publicDir) {
         p.moveTarget = movement.moveTarget;
       }
       p.traveledDistance += Math.hypot(p.player.x - prevX, p.player.y - prevY);
+      collectNearbyResources(p);
+    }
+  }
+
+  function collectNearbyResources(p) {
+    const playerTile = worldToTile(world, p.player.x, p.player.y);
+    for (let row = playerTile.row - 1; row <= playerTile.row + 1; row += 1) {
+      for (let col = playerTile.col - 1; col <= playerTile.col + 1; col += 1) {
+        const key = `${col},${row}`;
+        if (p.harvestedResourceNodes.has(key)) continue;
+        const node = resourceNodes.get(key);
+        if (!node) continue;
+        p.harvestedResourceNodes.add(key);
+        p.resources[node.resource] = (p.resources[node.resource] || 0) + node.amount;
+      }
     }
   }
 
@@ -213,6 +272,7 @@ async function createGameEngine(publicDir) {
         moveTarget: me.moveTarget,
         camera,
         plannedPath: me.plannedPath,
+        resources: me.resources,
         zoom: z,
       },
       players: others,

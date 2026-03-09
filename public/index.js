@@ -9,13 +9,28 @@ const NAME_KEY = "homm_player_name";
 const gameCanvas = document.getElementById("gameCanvas");
 const minimapCanvas = document.getElementById("minimapCanvas");
 const stepCountEl = document.getElementById("stepCount");
+const resGoldEl = document.getElementById("resGold");
+const resIronEl = document.getElementById("resIron");
+const resCrystalEl = document.getElementById("resCrystal");
+const resMercuryEl = document.getElementById("resMercury");
 const zoomOutBtn = document.getElementById("zoomOutBtn");
 const zoomInBtn = document.getElementById("zoomInBtn");
 const zoomValueEl = document.getElementById("zoomValue");
 const gameCtx = gameCanvas.getContext("2d");
 const miniCtx = minimapCanvas.getContext("2d");
 
-if (!gameCtx || !miniCtx || !stepCountEl || !zoomOutBtn || !zoomInBtn || !zoomValueEl) {
+if (
+  !gameCtx ||
+  !miniCtx ||
+  !stepCountEl ||
+  !zoomOutBtn ||
+  !zoomInBtn ||
+  !zoomValueEl ||
+  !resGoldEl ||
+  !resIronEl ||
+  !resCrystalEl ||
+  !resMercuryEl
+) {
   throw new Error("2D canvas is not supported in this browser.");
 }
 
@@ -122,6 +137,14 @@ function applyZoomToWorld() {
   world.spriteDrawHeight = Math.round(baseRenderMetrics.spriteDrawHeight * zoom);
 }
 
+function updateResourcesBar(resources = null) {
+  const r = resources || { gold: 0, iron: 0, crystal: 0, mercury: 0 };
+  resGoldEl.textContent = String(r.gold ?? 0);
+  resIronEl.textContent = String(r.iron ?? 0);
+  resCrystalEl.textContent = String(r.crystal ?? 0);
+  resMercuryEl.textContent = String(r.mercury ?? 0);
+}
+
 function setZoom(nextZoom, { sync = true } = {}) {
   const next = clampZoom(nextZoom);
   if (Math.abs(next - zoom) < 0.001) return;
@@ -155,6 +178,7 @@ function applySnapshot(data) {
       updateZoomLabel();
     }
   }
+  updateResourcesBar(state.resources);
 
   const isMoving = state?.moveTarget?.active === true;
   if (pendingFollowOnMoveStart && !wasMoving && isMoving) {
@@ -323,6 +347,7 @@ async function initGame() {
   ensureSession();
   resizeCanvases();
   updateZoomLabel();
+  updateResourcesBar();
   const sprites = await loadTileSprites();
   await connectWs();
   const renderWorld = createTileMapRenderer(gameCtx, world, view, sprites);

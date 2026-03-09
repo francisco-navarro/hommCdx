@@ -370,6 +370,8 @@ function placeStructureType(tiles, world, tileType, targetCount, seedBase, maxAt
     if (current !== TILE_TYPES.GRASS && current !== TILE_TYPES.GRASS_2) continue;
     if (hasWaterNeighbor(tiles, world, x, y)) continue;
     if (isNearCastleDoorCorridor(tiles, world, x, y)) continue;
+    if (hasNearbyCastle(tiles, world, x, y, x, y, 5)) continue;
+    if (hasNearbyResource(tiles, world, x, y, x, y, 4)) continue;
     tiles[idx] = tileType;
     placed += 1;
   }
@@ -406,6 +408,7 @@ function placeCastleType(tiles, world, castleType, targetCount, seedBase, maxAtt
     }
     if (blocked) continue;
     if (isNearCastleDoorCorridor(tiles, world, x, y)) continue;
+    if (hasNearbyCastleOrResource(tiles, world, x, y, x + 1, y + 1, 5)) continue;
 
     // Keep door strip below 2x2 footprint route-capable.
     const southLeft = tiles[indexOf(world, x, y + 2)];
@@ -564,14 +567,62 @@ function isCastleTile(type) {
   );
 }
 
-function isStructureTile(type) {
+function isCastleAnchorTile(type) {
+  return type === TILE_TYPES.CASTLE_RED || type === TILE_TYPES.CASTLE_YELLOW;
+}
+
+function isResourceTile(type) {
   return (
     type === TILE_TYPES.SAWMILL ||
     type === TILE_TYPES.GOLD_MINE ||
     type === TILE_TYPES.IRON_MINE ||
     type === TILE_TYPES.GLASS_MINE ||
     type === TILE_TYPES.ALCHEMY_LAB ||
-    type === TILE_TYPES.GEM_MINE ||
+    type === TILE_TYPES.GEM_MINE
+  );
+}
+
+function hasNearbyType(tiles, world, minX, minY, maxX, maxY, radius, predicate) {
+  const scanMinX = Math.max(0, minX - radius);
+  const scanMaxX = Math.min(world.cols - 1, maxX + radius);
+  const scanMinY = Math.max(0, minY - radius);
+  const scanMaxY = Math.min(world.rows - 1, maxY + radius);
+
+  for (let y = scanMinY; y <= scanMaxY; y += 1) {
+    for (let x = scanMinX; x <= scanMaxX; x += 1) {
+      const dx = x < minX ? minX - x : x > maxX ? x - maxX : 0;
+      const dy = y < minY ? minY - y : y > maxY ? y - maxY : 0;
+      if (Math.max(dx, dy) > radius) continue;
+      if (predicate(tiles[indexOf(world, x, y)])) return true;
+    }
+  }
+  return false;
+}
+
+function hasNearbyCastleOrResource(tiles, world, minX, minY, maxX, maxY, radius) {
+  return hasNearbyType(
+    tiles,
+    world,
+    minX,
+    minY,
+    maxX,
+    maxY,
+    radius,
+    (type) => isCastleTile(type) || isResourceTile(type)
+  );
+}
+
+function hasNearbyCastle(tiles, world, minX, minY, maxX, maxY, radius) {
+  return hasNearbyType(tiles, world, minX, minY, maxX, maxY, radius, isCastleTile);
+}
+
+function hasNearbyResource(tiles, world, minX, minY, maxX, maxY, radius) {
+  return hasNearbyType(tiles, world, minX, minY, maxX, maxY, radius, isResourceTile);
+}
+
+function isStructureTile(type) {
+  return (
+    isResourceTile(type) ||
     isCastleTile(type)
   );
 }
@@ -631,7 +682,7 @@ function getCastleAnchors(tiles, world) {
   for (let y = 0; y < world.rows; y += 1) {
     for (let x = 0; x < world.cols; x += 1) {
       const tile = tiles[indexOf(world, x, y)];
-      if (tile !== TILE_TYPES.CASTLE_RED && tile !== TILE_TYPES.CASTLE_YELLOW) continue;
+      if (!isCastleAnchorTile(tile)) continue;
       if (x + 1 >= world.cols || y + 1 >= world.rows) continue;
       anchors.push({ x, y });
     }

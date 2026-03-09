@@ -59,6 +59,26 @@ body {
   font-size: 14px;
 }
 
+.resource-bar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(8, 12, 18, 0.78);
+  font-size: 14px;
+  z-index: 3;
+}
+
+.resource-bar strong {
+  color: #ffe98a;
+}
+
 .status-bar {
   height: 52px;
   border-top: 1px solid var(--border);
@@ -117,6 +137,13 @@ body {
 
   .hud {
     font-size: 12px;
+  }
+
+  .resource-bar {
+    top: 8px;
+    gap: 8px;
+    padding: 6px 8px;
+    font-size: 11px;
   }
 
   .status-bar {
