@@ -48,7 +48,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.GRASS]: {
     id: TILE_TYPES.GRASS,
     key: "grass",
-    image: "/img/map/grass.png",
+    image: "/img/terrain/grass.png",
     terrain: "grass",
     group: "ground",
     walkable: true,
@@ -57,7 +57,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.GRASS_2]: {
     id: TILE_TYPES.GRASS_2,
     key: "grass_2",
-    image: "/img/map/grass2.png",
+    image: "/img/terrain/grass2.png",
     terrain: "grass",
     group: "ground",
     walkable: true,
@@ -66,7 +66,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.PATH_H]: {
     id: TILE_TYPES.PATH_H,
     key: "path_h",
-    image: "/img/map/path-h.png",
+    image: "/img/paths/path-h.png",
     terrain: "path",
     group: "route",
     walkable: true,
@@ -75,7 +75,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.PATH_V]: {
     id: TILE_TYPES.PATH_V,
     key: "path_v",
-    image: "/img/map/path-v.png",
+    image: "/img/paths/path-v.png",
     terrain: "path",
     group: "route",
     walkable: true,
@@ -84,7 +84,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER]: {
     id: TILE_TYPES.WATER,
     key: "water",
-    image: "/img/map/water.png",
+    image: "/img/water/water.png",
     terrain: "water",
     group: "liquid",
     walkable: false,
@@ -93,7 +93,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER_BORDER_N]: {
     id: TILE_TYPES.WATER_BORDER_N,
     key: "water_border_n",
-    image: "/img/map/water-border-n.png",
+    image: "/img/water/water-border-n.png",
     terrain: "shore",
     group: "water_edge",
     walkable: false,
@@ -102,7 +102,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER_BORDER_E]: {
     id: TILE_TYPES.WATER_BORDER_E,
     key: "water_border_e",
-    image: "/img/map/water-border-e.png",
+    image: "/img/water/water-border-e.png",
     terrain: "shore",
     group: "water_edge",
     walkable: false,
@@ -111,7 +111,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER_BORDER_S]: {
     id: TILE_TYPES.WATER_BORDER_S,
     key: "water_border_s",
-    image: "/img/map/water-border-s.png",
+    image: "/img/water/water-border-s.png",
     terrain: "shore",
     group: "water_edge",
     walkable: false,
@@ -120,7 +120,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER_BORDER_W]: {
     id: TILE_TYPES.WATER_BORDER_W,
     key: "water_border_w",
-    image: "/img/map/water-border-w.png",
+    image: "/img/water/water-border-w.png",
     terrain: "shore",
     group: "water_edge",
     walkable: false,
@@ -129,7 +129,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.PATH_CORNER_SE]: {
     id: TILE_TYPES.PATH_CORNER_SE,
     key: "path_corner_se",
-    image: "/img/map/path-corner-se.png",
+    image: "/img/paths/path-corner-se.png",
     terrain: "path",
     group: "route",
     walkable: true,
@@ -138,7 +138,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.PATH_CORNER_SW]: {
     id: TILE_TYPES.PATH_CORNER_SW,
     key: "path_corner_sw",
-    image: "/img/map/path-corner-sw.png",
+    image: "/img/paths/path-corner-sw.png",
     terrain: "path",
     group: "route",
     walkable: true,
@@ -147,7 +147,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.PATH_CORNER_NW]: {
     id: TILE_TYPES.PATH_CORNER_NW,
     key: "path_corner_nw",
-    image: "/img/map/path-corner-nw.png",
+    image: "/img/paths/path-corner-nw.png",
     terrain: "path",
     group: "route",
     walkable: true,
@@ -156,7 +156,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.PATH_CORNER_NE]: {
     id: TILE_TYPES.PATH_CORNER_NE,
     key: "path_corner_ne",
-    image: "/img/map/path-corner-ne.png",
+    image: "/img/paths/path-corner-ne.png",
     terrain: "path",
     group: "route",
     walkable: true,
@@ -165,7 +165,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.PATH_CORNER_T]: {
     id: TILE_TYPES.PATH_CORNER_T,
     key: "path_corner_t",
-    image: "/img/map/path-corner-T.png",
+    image: "/img/paths/path-corner-T.png",
     terrain: "path",
     group: "route",
     walkable: true,
@@ -174,7 +174,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.TREES]: {
     id: TILE_TYPES.TREES,
     key: "trees_1",
-    image: "/img/map/trees1.png",
+    image: "/img/nature/trees1.png",
     terrain: "forest",
     group: "obstacle",
     walkable: false,
@@ -183,7 +183,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER_CORNER_OUT_NE]: {
     id: TILE_TYPES.WATER_CORNER_OUT_NE,
     key: "water_corner_out_ne",
-    image: "/img/map/water-corner-out-ne.png",
+    image: "/img/water/water-corner-out-ne.png",
     terrain: "shore",
     group: "water_edge",
     walkable: false,
@@ -192,7 +192,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER_CORNER_OUT_SE]: {
     id: TILE_TYPES.WATER_CORNER_OUT_SE,
     key: "water_corner_out_se",
-    image: "/img/map/water-corner-out-se.png",
+    image: "/img/water/water-corner-out-se.png",
     terrain: "shore",
     group: "water_edge",
     walkable: false,
@@ -201,7 +201,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER_CORNER_OUT_SW]: {
     id: TILE_TYPES.WATER_CORNER_OUT_SW,
     key: "water_corner_out_sw",
-    image: "/img/map/water-corner-out-sw.png",
+    image: "/img/water/water-corner-out-sw.png",
     terrain: "shore",
     group: "water_edge",
     walkable: false,
@@ -210,7 +210,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER_CORNER_OUT_NW]: {
     id: TILE_TYPES.WATER_CORNER_OUT_NW,
     key: "water_corner_out_nw",
-    image: "/img/map/water-corner-out-nw.png",
+    image: "/img/water/water-corner-out-nw.png",
     terrain: "shore",
     group: "water_edge",
     walkable: false,
@@ -219,7 +219,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER_CORNER_IN_NE]: {
     id: TILE_TYPES.WATER_CORNER_IN_NE,
     key: "water_corner_in_ne",
-    image: "/img/map/water-corner-in-ne.png",
+    image: "/img/water/water-corner-in-ne.png",
     terrain: "shore",
     group: "water_edge",
     walkable: false,
@@ -228,7 +228,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER_CORNER_IN_SE]: {
     id: TILE_TYPES.WATER_CORNER_IN_SE,
     key: "water_corner_in_se",
-    image: "/img/map/water-corner-in-se.png",
+    image: "/img/water/water-corner-in-se.png",
     terrain: "shore",
     group: "water_edge",
     walkable: false,
@@ -237,7 +237,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER_CORNER_IN_SW]: {
     id: TILE_TYPES.WATER_CORNER_IN_SW,
     key: "water_corner_in_sw",
-    image: "/img/map/water-corner-in-sw.png",
+    image: "/img/water/water-corner-in-sw.png",
     terrain: "shore",
     group: "water_edge",
     walkable: false,
@@ -246,7 +246,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.WATER_CORNER_IN_NW]: {
     id: TILE_TYPES.WATER_CORNER_IN_NW,
     key: "water_corner_in_nw",
-    image: "/img/map/water-corner-in-nw.png",
+    image: "/img/water/water-corner-in-nw.png",
     terrain: "shore",
     group: "water_edge",
     walkable: false,
@@ -255,7 +255,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.TREES_2]: {
     id: TILE_TYPES.TREES_2,
     key: "trees_2",
-    image: "/img/map/trees2.png",
+    image: "/img/nature/trees2.png",
     terrain: "forest",
     group: "obstacle",
     walkable: false,
@@ -264,7 +264,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.SAWMILL]: {
     id: TILE_TYPES.SAWMILL,
     key: "sawmill",
-    image: "/img/map/sawmill.png",
+    image: "/img/structures/sawmill.png",
     terrain: "structure",
     group: "poi",
     walkable: false,
@@ -273,7 +273,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.GOLD_MINE]: {
     id: TILE_TYPES.GOLD_MINE,
     key: "gold_mine",
-    image: "/img/map/gold-mine.png",
+    image: "/img/resources/gold-mine.png",
     terrain: "structure",
     group: "poi",
     walkable: false,
@@ -282,7 +282,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.IRON_MINE]: {
     id: TILE_TYPES.IRON_MINE,
     key: "iron_mine",
-    image: "/img/map/iron-mine.png",
+    image: "/img/resources/iron-mine.png",
     terrain: "structure",
     group: "poi",
     walkable: false,
@@ -291,7 +291,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.GLASS_MINE]: {
     id: TILE_TYPES.GLASS_MINE,
     key: "glass_mine",
-    image: "/img/map/glass-mine.png",
+    image: "/img/resources/glass-mine.png",
     terrain: "structure",
     group: "poi",
     walkable: false,
@@ -300,7 +300,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.ALCHEMY_LAB]: {
     id: TILE_TYPES.ALCHEMY_LAB,
     key: "alchemy_lab",
-    image: "/img/map/alchemy-lab.png",
+    image: "/img/structures/alchemy-lab.png",
     terrain: "structure",
     group: "poi",
     walkable: false,
@@ -309,7 +309,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.GEM_MINE]: {
     id: TILE_TYPES.GEM_MINE,
     key: "gem_mine",
-    image: "/img/map/gem-mine.png",
+    image: "/img/resources/gem-mine.png",
     terrain: "structure",
     group: "poi",
     walkable: false,
@@ -318,7 +318,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.CASTLE_RED]: {
     id: TILE_TYPES.CASTLE_RED,
     key: "castle_red",
-    image: "/img/map/castles/castle-red.png",
+    image: "/img/structures/castles/castle-red.png",
     terrain: "structure",
     group: "poi",
     walkable: false,
@@ -327,7 +327,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.CASTLE_YELLOW]: {
     id: TILE_TYPES.CASTLE_YELLOW,
     key: "castle_yellow",
-    image: "/img/map/castles/castle-yellow.png",
+    image: "/img/structures/castles/castle-yellow.png",
     terrain: "structure",
     group: "poi",
     walkable: false,
@@ -336,7 +336,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.CASTLE_RED_FOOTPRINT]: {
     id: TILE_TYPES.CASTLE_RED_FOOTPRINT,
     key: "castle_red_footprint",
-    image: "/img/map/grass.png",
+    image: "/img/terrain/grass.png",
     terrain: "structure",
     group: "poi",
     walkable: false,
@@ -345,7 +345,7 @@ export const TILE_CATALOG = {
   [TILE_TYPES.CASTLE_YELLOW_FOOTPRINT]: {
     id: TILE_TYPES.CASTLE_YELLOW_FOOTPRINT,
     key: "castle_yellow_footprint",
-    image: "/img/map/grass.png",
+    image: "/img/terrain/grass.png",
     terrain: "structure",
     group: "poi",
     walkable: false,
