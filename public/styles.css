@@ -1,8 +1,11 @@
 :root {
-  --bg: #111822;
-  --panel: rgba(0, 0, 0, 0.55);
-  --text: #e8eef4;
-  --border: rgba(255, 255, 255, 0.2);
+  --bg-1: #0d1b2a;
+  --bg-2: #1b263b;
+  --panel: rgba(10, 15, 24, 0.86);
+  --text: #eef4fb;
+  --muted: #b2bfd1;
+  --accent: #ffcf5d;
+  --border: rgba(255, 255, 255, 0.22);
 }
 
 * {
@@ -12,157 +15,95 @@
 html,
 body {
   margin: 0;
-  height: 100%;
-  background: radial-gradient(circle at 20% 20%, #1c2838, var(--bg));
-  color: var(--text);
+  min-height: 100%;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text);
 }
 
-body {
+.auth-body {
+  background:
+    radial-gradient(1100px 500px at 10% -10%, rgba(255, 207, 93, 0.18), transparent 60%),
+    radial-gradient(900px 500px at 120% 120%, rgba(95, 142, 255, 0.2), transparent 60%),
+    linear-gradient(160deg, var(--bg-1), var(--bg-2));
+}
+
+.auth-shell {
+  min-height: 100vh;
   display: grid;
-  grid-template-rows: 1fr auto;
-  overflow: hidden;
+  place-items: center;
+  padding: 20px;
 }
 
-.game-shell {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-#gameCanvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-  background: #000;
-}
-
-#minimapCanvas {
-  position: absolute;
-  right: 14px;
-  top: 14px;
-  width: 220px;
-  height: 220px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.6);
-}
-
-.hud {
-  position: absolute;
-  left: 14px;
-  top: 14px;
+.auth-card {
+  width: min(680px, 100%);
   background: var(--panel);
-  padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-.resource-bar {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
+  border-radius: 12px;
+  padding: 20px;
+  display: grid;
   gap: 14px;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(8, 12, 18, 0.78);
-  font-size: 14px;
-  z-index: 3;
 }
 
-.resource-bar strong {
-  color: #ffe98a;
+.auth-card h1 {
+  margin: 0;
+  font-size: 32px;
+  letter-spacing: 0.5px;
 }
 
-.status-bar {
-  height: 52px;
-  border-top: 1px solid var(--border);
-  background: rgba(4, 8, 13, 0.92);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+.auth-subtitle {
+  margin: 0;
+  color: var(--muted);
+}
+
+.auth-form {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.auth-form h2 {
+  margin: 0 0 2px;
   font-size: 18px;
 }
 
-.zoom-controls {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: 14px;
+.auth-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 14px;
 }
 
-.zoom-controls button {
-  min-width: 30px;
-  height: 30px;
+.auth-form input {
+  width: 100%;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(8, 12, 18, 0.7);
   color: var(--text);
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
-  padding: 0 6px;
-}
-
-.zoom-controls button:hover {
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.zoom-controls button:active {
-  transform: translateY(1px);
-}
-
-.zoom-controls button:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-#zoomValue {
-  min-width: 52px;
-  text-align: center;
   font-size: 15px;
 }
 
-@media (max-width: 700px) {
-  #minimapCanvas {
-    width: 150px;
-    height: 150px;
-  }
+.auth-form button {
+  margin-top: 4px;
+  border: 1px solid rgba(255, 207, 93, 0.5);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, #f8da8c, var(--accent));
+  color: #1b1b1b;
+  font-weight: 700;
+  cursor: pointer;
+}
 
-  .hud {
-    font-size: 12px;
-  }
+.auth-form button:hover {
+  filter: brightness(1.05);
+}
 
-  .resource-bar {
-    top: 8px;
-    gap: 8px;
-    padding: 6px 8px;
-    font-size: 11px;
-  }
-
-  .status-bar {
-    font-size: 15px;
-    gap: 8px;
-  }
-
-  .zoom-controls {
-    margin-left: 8px;
-    gap: 6px;
-  }
-
-  .zoom-controls button {
-    min-width: 28px;
-    height: 28px;
-  }
-
-  #zoomValue {
-    min-width: 46px;
-    font-size: 13px;
-  }
+.auth-message {
+  min-height: 20px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
 }

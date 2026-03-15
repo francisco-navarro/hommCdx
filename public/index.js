@@ -4,7 +4,8 @@ import { renderMinimap } from "./minimap-renderer.mjs";
 import { createTileMapRenderer, loadTileSprites } from "./tilemap-renderer.mjs";
 
 const SESSION_KEY = "homm_session_id";
-const NAME_KEY = "homm_player_name";
+const AUTH_TOKEN_KEY = "homm_auth_token";
+const AUTH_USER_KEY = "homm_auth_user";
 
 const gameCanvas = document.getElementById("gameCanvas");
 const minimapCanvas = document.getElementById("minimapCanvas");
@@ -41,6 +42,7 @@ let ws = null;
 let backendReady = false;
 let sessionId = null;
 let playerName = null;
+let authToken = null;
 let pendingTargetKey = null;
 let pendingFollowOnMoveStart = false;
 let zoom = 1;
@@ -57,7 +59,13 @@ const ZOOM_STEP = 0.25;
 
 function ensureSession() {
   let id = localStorage.getItem(SESSION_KEY);
-  let name = localStorage.getItem(NAME_KEY);
+  const name = localStorage.getItem(AUTH_USER_KEY);
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+
+  if (!name || !token) {
+    window.location.replace("/");
+    return false;
+  }
 
   if (!id) {
     id =
@@ -67,18 +75,10 @@ function ensureSession() {
     localStorage.setItem(SESSION_KEY, id);
   }
 
-  if (!name) {
-    while (!name) {
-      const value = prompt("Escribe tu nombre de jugador:");
-      if (value === null) continue;
-      const trimmed = value.trim().slice(0, 24);
-      if (trimmed) name = trimmed;
-    }
-    localStorage.setItem(NAME_KEY, name);
-  }
-
   sessionId = id;
-  playerName = name;
+  playerName = name.trim().slice(0, 24);
+  authToken = token;
+  return true;
 }
 
 function resizeCanvases() {
@@ -203,6 +203,7 @@ function connectWs() {
         type: "hello",
         sessionId,
         name: playerName,
+        authToken,
         viewWidth: view.width,
         viewHeight: view.height,
         zoom,
@@ -344,7 +345,7 @@ function renderPlannedPathOverlay(currentState) {
 }
 
 async function initGame() {
-  ensureSession();
+  if (!ensureSession()) return;
   resizeCanvases();
   updateZoomLabel();
   updateResourcesBar();

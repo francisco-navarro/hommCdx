@@ -1,34 +1,46 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WebGL Map + Minimap</title>
+    <title>Acceso - HOMM Codex</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
-  <body>
-    <main class="game-shell">
-      <canvas id="gameCanvas"></canvas>
-      <div class="resource-bar">
-        <span>Oro: <strong id="resGold">0</strong></span>
-        <span>Iron: <strong id="resIron">0</strong></span>
-        <span>Cristal: <strong id="resCrystal">0</strong></span>
-        <span>Mercurio: <strong id="resMercury">0</strong></span>
-      </div>
-      <canvas id="minimapCanvas" width="220" height="220"></canvas>
-      <div class="hud">
-        <strong>Controls:</strong> Click para previsualizar ruta, click otra vez para confirmar
-      </div>
+  <body class="auth-body">
+    <main class="auth-shell">
+      <section class="auth-card">
+        <h1>HOMM Codex</h1>
+        <p class="auth-subtitle">Entra con usuario y contraseña para jugar.</p>
+
+        <form id="loginForm" class="auth-form">
+          <h2>Login</h2>
+          <label>
+            Usuario
+            <input id="loginUsername" name="username" type="text" minlength="3" required />
+          </label>
+          <label>
+            Password
+            <input id="loginPassword" name="password" type="password" minlength="4" required />
+          </label>
+          <button type="submit">Entrar</button>
+        </form>
+
+        <form id="registerForm" class="auth-form">
+          <h2>Registro</h2>
+          <label>
+            Usuario
+            <input id="registerUsername" name="username" type="text" minlength="3" required />
+          </label>
+          <label>
+            Password
+            <input id="registerPassword" name="password" type="password" minlength="4" required />
+          </label>
+          <button type="submit">Crear cuenta</button>
+        </form>
+
+        <p id="authMessage" class="auth-message" aria-live="polite"></p>
+      </section>
     </main>
-    <footer class="status-bar">
-      <span>Pasos:</span>
-      <strong id="stepCount">0</strong>
-      <div class="zoom-controls">
-        <button id="zoomOutBtn" type="button" aria-label="Alejar zoom">-</button>
-        <span id="zoomValue">100%</span>
-        <button id="zoomInBtn" type="button" aria-label="Acercar zoom">+</button>
-      </div>
-    </footer>
-    <script type="module" src="/index.js"></script>
+    <script type="module" src="/auth.js"></script>
   </body>
 </html>

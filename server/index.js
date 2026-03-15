@@ -1,16 +1,26 @@
 const http = require("http");
-const { HOST, PORT, PUBLIC_DIR } = require("./config");
+const { HOST, PORT, PUBLIC_DIR, MONGODB_URI } = require("./config");
 const { handleStatic } = require("./connection/static-handler");
+const { handleAuthApi, sendAuthError } = require("./connection/auth-handler");
 const { createGameEngine } = require("./game/engine");
 const { attachWebSocketServer } = require("./connection/ws-handler");
 
 async function startServer() {
+  const { createAuthService } = require("./auth/service");
+  const auth = await createAuthService(MONGODB_URI);
   const game = await createGameEngine(PUBLIC_DIR);
   const server = http.createServer((req, res) => {
-    handleStatic(req, res, PUBLIC_DIR, HOST, PORT);
+    handleAuthApi(req, res, auth, HOST, PORT)
+      .then((handled) => {
+        if (handled) return;
+        handleStatic(req, res, PUBLIC_DIR, HOST, PORT);
+      })
+      .catch((error) => {
+        sendAuthError(res, error);
+      });
   });
 
-  const stopRealtime = attachWebSocketServer(server, game, HOST, PORT);
+  const stopRealtime = attachWebSocketServer(server, game, HOST, PORT, auth);
   let shuttingDown = false;
 
   server.listen(PORT, HOST, () => {
@@ -23,6 +33,10 @@ async function startServer() {
     console.log(`[shutdown] Signal received: ${signal}`);
     console.log("[shutdown] Stopping game ticker...");
     stopRealtime();
+    console.log("[shutdown] Closing auth database...");
+    auth.close().catch((error) => {
+      console.error("[shutdown] Error while closing auth database:", error);
+    });
     if (typeof server.closeIdleConnections === "function") {
       server.closeIdleConnections();
     }

@@ -2,7 +2,7 @@ const { TICK_MS } = require("../config");
 const { clampView, isNonEmptyString } = require("../utils");
 const { wsAcceptKey, encodeWsText, decodeClientFrames } = require("./ws-protocol");
 
-function attachWebSocketServer(server, game, host, port) {
+function attachWebSocketServer(server, game, host, port, authService) {
   const clients = new Set();
 
   function send(client, payload) {
@@ -75,14 +75,21 @@ function attachWebSocketServer(server, game, host, port) {
 
             const data = JSON.parse(msg.text);
             if (data.type === "hello") {
-              if (!isNonEmptyString(data.sessionId) || !isNonEmptyString(data.name)) {
-                send(client, { type: "error", message: "Missing session or name." });
+              if (!isNonEmptyString(data.sessionId)) {
+                send(client, { type: "error", message: "Missing session." });
+                socket.end();
+                return;
+              }
+
+              const authUsername = authService.getUsernameFromToken(data.authToken);
+              if (!authUsername) {
+                send(client, { type: "error", message: "Unauthorized." });
                 socket.end();
                 return;
               }
 
               client.sessionId = data.sessionId.trim();
-              client.name = data.name.trim().slice(0, 24);
+              client.name = authUsername.slice(0, 24);
               client.view = clampView(data.viewWidth, data.viewHeight);
               client.cameraOverride = null;
               client.zoom = game.clampZoom(data.zoom, 1);

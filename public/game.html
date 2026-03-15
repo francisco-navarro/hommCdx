@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebGL Map + Minimap</title>
+    <link rel="stylesheet" href="/game.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <canvas id="gameCanvas"></canvas>
+      <div class="resource-bar">
+        <span>Oro: <strong id="resGold">0</strong></span>
+        <span>Iron: <strong id="resIron">0</strong></span>
+        <span>Cristal: <strong id="resCrystal">0</strong></span>
+        <span>Mercurio: <strong id="resMercury">0</strong></span>
+      </div>
+      <canvas id="minimapCanvas" width="220" height="220"></canvas>
+      <div class="hud">
+        <strong>Controls:</strong> Click para previsualizar ruta, click otra vez para confirmar
+      </div>
+    </main>
+    <footer class="status-bar">
+      <span>Pasos:</span>
+      <strong id="stepCount">0</strong>
+      <div class="zoom-controls">
+        <button id="zoomOutBtn" type="button" aria-label="Alejar zoom">-</button>
+        <span id="zoomValue">100%</span>
+        <button id="zoomInBtn" type="button" aria-label="Acercar zoom">+</button>
+      </div>
+    </footer>
+    <script type="module" src="/index.js"></script>
+  </body>
+</html>

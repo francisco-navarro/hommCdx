@@ -1,0 +1,168 @@
+:root {
+  --bg: #111822;
+  --panel: rgba(0, 0, 0, 0.55);
+  --text: #e8eef4;
+  --border: rgba(255, 255, 255, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: radial-gradient(circle at 20% 20%, #1c2838, var(--bg));
+  color: var(--text);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  overflow: hidden;
+}
+
+.game-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#gameCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: #000;
+}
+
+#minimapCanvas {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  width: 220px;
+  height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.hud {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  background: var(--panel);
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.resource-bar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(8, 12, 18, 0.78);
+  font-size: 14px;
+  z-index: 3;
+}
+
+.resource-bar strong {
+  color: #ffe98a;
+}
+
+.status-bar {
+  height: 52px;
+  border-top: 1px solid var(--border);
+  background: rgba(4, 8, 13, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 18px;
+}
+
+.zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 14px;
+}
+
+.zoom-controls button {
+  min-width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 6px;
+}
+
+.zoom-controls button:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.zoom-controls button:active {
+  transform: translateY(1px);
+}
+
+.zoom-controls button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+#zoomValue {
+  min-width: 52px;
+  text-align: center;
+  font-size: 15px;
+}
+
+@media (max-width: 700px) {
+  #minimapCanvas {
+    width: 150px;
+    height: 150px;
+  }
+
+  .hud {
+    font-size: 12px;
+  }
+
+  .resource-bar {
+    top: 8px;
+    gap: 8px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  .status-bar {
+    font-size: 15px;
+    gap: 8px;
+  }
+
+  .zoom-controls {
+    margin-left: 8px;
+    gap: 6px;
+  }
+
+  .zoom-controls button {
+    min-width: 28px;
+    height: 28px;
+  }
+
+  #zoomValue {
+    min-width: 46px;
+    font-size: 13px;
+  }
+}

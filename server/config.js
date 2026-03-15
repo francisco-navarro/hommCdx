@@ -3,6 +3,7 @@ const path = require("path");
 const HOST = "127.0.0.1";
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/hommcodex";
 const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 function parseTickMs(value, fallback = 33) {
@@ -29,6 +30,7 @@ module.exports = {
   HOST,
   PORT,
   PUBLIC_DIR,
+  MONGODB_URI,
   WS_GUID,
   TICK_MS,
   MIME_TYPES,
